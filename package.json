@@ -1,0 +1,13 @@
+{
+  "name": "boton-panico-colegio",
+  "version": "1.0.0",
+  "description": "Sistema de Botón de Pánico Web para Salas de Clases y Receptores de Inspectoría/Enfermería/Convivencia",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}

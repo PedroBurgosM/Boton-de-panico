@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administración de Salas y Accesos Directos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">⚙️</span>
+      <span>Administración y Generador de Accesos Directos</span>
+    </div>
+    <div>
+      <a href="index.html" class="btn-secondary" style="text-decoration: none;">← Volver al Inicio</a>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+
+      <!-- Panel Superior: Agregar Nueva Sala -->
+      <section style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <h2 class="section-title"><span>➕</span> Registrar Nueva Sala o Espacio del Colegio</h2>
+        <form id="formNuevaSala" onsubmit="agregarSala(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) auto; gap: 1rem; align-items: flex-end;">
+          <div>
+            <label style="display: block; font-weight: 700; margin-bottom: 0.35rem; font-size: 0.9rem;">Nombre de la Sala:</label>
+            <input type="text" id="txtNuevoNombre" class="form-control" placeholder="Ej: Sala 304, Lab Robótica" required>
+          </div>
+          <div>
+            <label style="display: block; font-weight: 700; margin-bottom: 0.35rem; font-size: 0.9rem;">Pabellón / Piso / Sector:</label>
+            <input type="text" id="txtNuevoPabellon" class="form-control" placeholder="Ej: Pabellón 2 - Piso 3" required>
+          </div>
+          <div>
+            <button type="submit" class="btn-primary" style="height: 44px; padding: 0 1.5rem;">Guardar Sala</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Panel: Enlaces para los Receptores (Inspectoría, Enfermería, Convivencia) -->
+      <section style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: var(--shadow-lg); border-top: 4px solid var(--primary);">
+        <h2 class="section-title"><span>🏢</span> Enlaces para los Computadores de Destino</h2>
+        <p style="color: var(--gray-600); font-size: 0.95rem; margin-bottom: 1.25rem;">
+          Copia estos enlaces para dejarlos fijados o en el escritorio de los equipos receptores:
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+          <div style="background: var(--gray-100); padding: 1rem; border-radius: 0.75rem;">
+            <div style="font-weight: 800; color: var(--dark); margin-bottom: 0.25rem;">🏢 Inspectoría General</div>
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.75rem;">Recibe absolutamente todas las alertas.</div>
+            <button class="btn-secondary" onclick="copiarTexto(generarUrlReceptor('todos'))" style="width: 100%;">📋 Copiar Enlace</button>
+          </div>
+
+          <div style="background: #fff1f2; padding: 1rem; border-radius: 0.75rem;">
+            <div style="font-weight: 800; color: var(--medical); margin-bottom: 0.25rem;">🩺 Enfermería</div>
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.75rem;">Recibe llamados médicos y pánico general.</div>
+            <button class="btn-secondary" onclick="copiarTexto(generarUrlReceptor('enfermeria'))" style="width: 100%;">📋 Copiar Enlace</button>
+          </div>
+
+          <div style="background: #f5f3ff; padding: 1rem; border-radius: 0.75rem;">
+            <div style="font-weight: 800; color: var(--convivencia); margin-bottom: 0.25rem;">🤝 Convivencia Escolar</div>
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.75rem;">Recibe contención, mediación y pánico.</div>
+            <button class="btn-secondary" onclick="copiarTexto(generarUrlReceptor('convivencia'))" style="width: 100%;">📋 Copiar Enlace</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel: Lista de Salas Registradas y Generador de Accesos Directos -->
+      <section style="background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 class="section-title" style="margin-bottom: 0;">
+            <span>📋</span> Listado de Salas y Accesos para el Escritorio
+          </h2>
+          <span id="lblTotalSalas" class="status-badge" style="background: var(--gray-200); color: var(--dark); font-weight: 800;">0 Salas</span>
+        </div>
+
+        <p style="color: var(--gray-600); font-size: 0.95rem; margin-bottom: 1.25rem;">
+          Para cada sala, puedes copiar el <strong>Enlace Web Directo</strong> o el <strong>Comando de Acceso Directo de Windows</strong> (para abrir en modo ventana limpia sin barra de navegación).
+        </p>
+
+        <div class="history-table-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Sala</th>
+                <th>Pabellón / Ubicación</th>
+                <th>Enlace Directo</th>
+                <th>Comando Acceso Directo</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tbodySalas">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;">Cargando salas...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    let salas = [];
+    let hostBase = window.location.origin;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await detectarHost();
+      await cargarSalas();
+    });
+
+    async function detectarHost() {
+      try {
+        const res = await fetch('/api/info');
+        const data = await res.json();
+        if (data.ip && data.ip !== 'localhost') {
+          hostBase = `http://${data.ip}:${data.puerto}`;
+        }
+      } catch (e) {}
+    }
+
+    async function cargarSalas() {
+      try {
+        const res = await fetch('/api/salas');
+        salas = await res.json();
+        renderizarTablaSalas();
+      } catch (e) {
+        console.error('Error cargando salas:', e);
+      }
+    }
+
+    function renderizarTablaSalas() {
+      const tbody = document.getElementById('tbodySalas');
+      document.getElementById('lblTotalSalas').textContent = `${salas.length} Salas Registradas`;
+
+      if (salas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem;">No hay salas registradas. Agrega una arriba.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      salas.forEach((sala, index) => {
+        const tr = document.createElement('tr');
+        const urlSala = `${hostBase}/sala.html?sala=${encodeURIComponent(sala.id || sala.nombre)}`;
+        const comandoAcceso = `chrome.exe --app="${urlSala}"`;
+
+        tr.innerHTML = `
+          <td><strong>${sala.nombre}</strong></td>
+          <td><span style="color: #64748b;">${sala.pabellon || '-'}</span></td>
+          <td>
+            <button class="btn-secondary" onclick="copiarTexto('${urlSala}')" style="font-size: 0.8rem;">
+              📋 Copiar Enlace
+            </button>
+          </td>
+          <td>
+            <button class="btn-secondary" onclick="copiarTexto('${comandoAcceso.replace(/"/g, '&quot;')}')" style="font-size: 0.8rem;">
+              💻 Copiar Comando
+            </button>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="${urlSala}" target="_blank" class="btn-secondary" style="text-decoration: none; font-size: 0.8rem; background: #e0f2fe; color: #0284c7;">
+                ↗ Probar
+              </a>
+              <button onclick="eliminarSala(${index})" class="btn-secondary" style="font-size: 0.8rem; background: #fee2e2; color: #dc2626;">
+                ✕
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function agregarSala(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('txtNuevoNombre').value.trim();
+      const pabellon = document.getElementById('txtNuevoPabellon').value.trim();
+      if (!nombre) return;
+
+      const id = nombre.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      salas.push({ id, nombre, pabellon });
+
+      await guardarSalasEnServidor();
+      document.getElementById('txtNuevoNombre').value = '';
+      document.getElementById('txtNuevoPabellon').value = '';
+      renderizarTablaSalas();
+    }
+
+    async function eliminarSala(index) {
+      if (confirm(`¿Eliminar ${salas[index].nombre} del listado?`)) {
+        salas.splice(index, 1);
+        await guardarSalasEnServidor();
+        renderizarTablaSalas();
+      }
+    }
+
+    async function guardarSalasEnServidor() {
+      try {
+        await fetch('/api/salas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(salas)
+        });
+      } catch (e) {
+        console.error('Error guardando salas:', e);
+      }
+    }
+
+    function generarUrlReceptor(rol) {
+      return `${hostBase}/receptor.html?rol=${rol}`;
+    }
+
+    function copiarTexto(texto) {
+      navigator.clipboard.writeText(texto).then(() => {
+        alert('✅ ¡Copiado al portapapeles!\n\n' + texto);
+      }).catch(() => {
+        prompt('Copia manualmente:', texto);
+      });
+    }
+  </script>
+</body>
+</html>

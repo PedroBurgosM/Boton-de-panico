@@ -1,0 +1,746 @@
+:root {
+  --primary: #1e3a8a;
+  --primary-hover: #1e40af;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --warning: #f59e0b;
+  --success: #16a34a;
+  --success-hover: #15803d;
+  --info: #0284c7;
+  --medical: #e11d48;
+  --convivencia: #8b5cf6;
+  --dark: #0f172a;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-600: #475569;
+  --gray-800: #1e293b;
+  --white: #ffffff;
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+body {
+  background-color: var(--gray-100);
+  color: var(--gray-800);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header general */
+.app-header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+  color: var(--white);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.app-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.brand-icon {
+  font-size: 1.75rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  animation: pulse-dot 2s infinite;
+}
+
+.status-dot.disconnected {
+  background-color: #ef4444;
+  animation: none;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+
+/* Contenedor principal */
+.main-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* ======================================================== */
+/* VISTA: SALA DE CLASES (BOTONERA)                          */
+/* ======================================================== */
+.sala-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.sala-banner {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-lg);
+  border-left: 6px solid var(--primary);
+}
+
+.sala-info h1 {
+  font-size: 1.8rem;
+  color: var(--dark);
+  font-weight: 800;
+}
+
+.sala-info p {
+  color: var(--gray-600);
+  font-size: 0.95rem;
+  margin-top: 0.2rem;
+}
+
+.sala-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-secondary {
+  background: var(--gray-200);
+  color: var(--gray-800);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--gray-300);
+}
+
+/* Grilla de Botones de Emergencia */
+.panic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.panic-card {
+  background: var(--white);
+  border-radius: 1.25rem;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 3px solid transparent;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.panic-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.panic-card:active {
+  transform: scale(0.97);
+}
+
+.panic-card.card-inspectoria {
+  border-color: #ef4444;
+}
+
+.panic-card.card-inspectoria:hover {
+  background: #fef2f2;
+}
+
+.panic-card.card-enfermeria {
+  border-color: #f43f5e;
+}
+
+.panic-card.card-enfermeria:hover {
+  background: #fff1f2;
+}
+
+.panic-card.card-convivencia {
+  border-color: #8b5cf6;
+}
+
+.panic-card.card-convivencia:hover {
+  background: #f5f3ff;
+}
+
+.panic-card.card-general {
+  border-color: #b91c1c;
+  background: linear-gradient(180deg, #fee2e2 0%, #ffffff 100%);
+  grid-column: 1 / -1;
+  padding: 2.25rem 1.5rem;
+}
+
+.panic-icon {
+  font-size: 4rem;
+  margin-bottom: 0.75rem;
+}
+
+.panic-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 0.35rem;
+}
+
+.panic-card.card-inspectoria .panic-title { color: #dc2626; }
+.panic-card.card-enfermeria .panic-title { color: #e11d48; }
+.panic-card.card-convivencia .panic-title { color: #7c3aed; }
+.panic-card.card-general .panic-title { color: #991b1b; font-size: 1.6rem; }
+
+.panic-desc {
+  font-size: 0.95rem;
+  color: var(--gray-600);
+  line-height: 1.35;
+}
+
+.panic-hint {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-600);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+}
+
+/* Pantalla de Alerta Activa en la Sala */
+.alerta-activa-banner {
+  background: #fef2f2;
+  border: 4px solid var(--danger);
+  border-radius: 1.25rem;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(220, 38, 38, 0.35);
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 30px rgba(220, 38, 38, 0.35); }
+  50% { box-shadow: 0 0 60px rgba(220, 38, 38, 0.7); }
+}
+
+.alerta-activa-banner.estado-atendiendo {
+  background: #eff6ff;
+  border-color: var(--info);
+  animation: pulse-border-blue 2s infinite;
+}
+
+@keyframes pulse-border-blue {
+  0%, 100% { box-shadow: 0 0 30px rgba(2, 132, 199, 0.35); }
+  50% { box-shadow: 0 0 50px rgba(2, 132, 199, 0.6); }
+}
+
+.alerta-activa-icon {
+  font-size: 5rem;
+  margin-bottom: 0.5rem;
+  animation: bounce-icon 1s infinite alternate;
+}
+
+@keyframes bounce-icon {
+  from { transform: scale(1); }
+  to { transform: scale(1.15); }
+}
+
+.alerta-activa-titulo {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--danger);
+  margin-bottom: 0.5rem;
+}
+
+.alerta-activa-banner.estado-atendiendo .alerta-activa-titulo {
+  color: var(--info);
+}
+
+.alerta-activa-detalles {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 1.5rem;
+}
+
+.alerta-activa-atencion {
+  background: var(--white);
+  border-radius: 0.75rem;
+  padding: 1rem 1.5rem;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--info);
+  border: 2px dashed var(--info);
+}
+
+.btn-cancelar-alerta {
+  background: #f87171;
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.75rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancelar-alerta:hover {
+  background: var(--danger);
+}
+
+/* ======================================================== */
+/* VISTA: PANEL RECEPTOR (INSPECTORÍA, ENFERMERÍA, ETC.)     */
+/* ======================================================== */
+.receptor-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--white);
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 1.5rem;
+}
+
+.receptor-role-select {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.receptor-role-select label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--gray-600);
+}
+
+.select-control {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--gray-300);
+  background: var(--white);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--dark);
+  cursor: pointer;
+}
+
+.receptor-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-sound-toggle {
+  background: var(--gray-100);
+  border: 2px solid var(--gray-300);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-sound-toggle.sound-active {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #15803d;
+}
+
+.btn-sound-toggle.sound-muted {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* Banner de Sirena / Alarma Sonora en Vivo */
+.siren-banner {
+  background: #b91c1c;
+  color: var(--white);
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  animation: flash-siren 1s infinite;
+  box-shadow: 0 0 25px rgba(185, 28, 28, 0.6);
+}
+
+@keyframes flash-siren {
+  0%, 100% { background: #b91c1c; }
+  50% { background: #dc2626; }
+}
+
+.siren-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.btn-silenciar {
+  background: var(--white);
+  color: var(--danger);
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+/* Tarjetas de Alertas Activas */
+.active-alerts-section {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.25rem;
+}
+
+.alert-card {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border-left: 8px solid var(--danger);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert-card.tipo-enfermeria { border-left-color: var(--medical); }
+.alert-card.tipo-convivencia { border-left-color: var(--convivencia); }
+.alert-card.tipo-inspectoria { border-left-color: var(--danger); }
+
+.alert-card.estado-atendiendo {
+  border-left-color: var(--info);
+  background: #f8fafc;
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.alert-sala {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--dark);
+}
+
+.alert-pabellon {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  font-weight: 600;
+}
+
+.alert-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.badge-inspectoria { background: #fee2e2; color: #dc2626; }
+.badge-enfermeria { background: #ffe4e6; color: #e11d48; }
+.badge-convivencia { background: #ede9fe; color: #7c3aed; }
+.badge-general { background: #fef08a; color: #854d0e; }
+
+.alert-timer {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.alert-card.estado-atendiendo .alert-timer {
+  color: var(--info);
+}
+
+.alert-atendido-por {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.alert-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-atender {
+  flex: 1;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-atender:hover {
+  background: var(--primary-hover);
+}
+
+.btn-resolver {
+  flex: 1;
+  background: var(--success);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-resolver:hover {
+  background: var(--success-hover);
+}
+
+.empty-state {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.empty-state-icon {
+  font-size: 3.5rem;
+  color: #22c55e;
+  margin-bottom: 0.75rem;
+}
+
+.empty-state h3 {
+  font-size: 1.4rem;
+  color: var(--dark);
+  margin-bottom: 0.25rem;
+}
+
+.empty-state p {
+  color: var(--gray-600);
+}
+
+/* Historial de Alertas */
+.history-section {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.history-table-container {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.history-table th, .history-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.history-table th {
+  background: var(--gray-100);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  text-transform: uppercase;
+}
+
+.history-table tr:hover {
+  background: #f8fafc;
+}
+
+/* Modales */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: var(--white);
+  border-radius: 1.25rem;
+  max-width: 500px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--dark);
+}
+
+.modal-card p {
+  color: var(--gray-600);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+  color: var(--gray-800);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--gray-300);
+  font-size: 1rem;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  .sala-banner {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  .receptor-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

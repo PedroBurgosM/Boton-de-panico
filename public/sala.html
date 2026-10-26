@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Botón de Alerta - Sala de Clases</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/audio.js"></script>
+</head>
+<body>
+
+  <!-- Encabezado -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">🏫</span>
+      <span>Botón de Emergencia Escolar</span>
+    </div>
+    <div class="status-badge" id="conexionBadge">
+      <div class="status-dot disconnected" id="statusDot"></div>
+      <span id="statusTexto">Conectando...</span>
+    </div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <div class="sala-container">
+
+      <!-- Banner de la Sala Actual -->
+      <div class="sala-banner">
+        <div class="sala-info">
+          <h1 id="lblNombreSala">Cargando Sala...</h1>
+          <p id="lblPabellonSala">Identificando ubicación del equipo...</p>
+        </div>
+        <div class="sala-actions">
+          <button class="btn-secondary" onclick="cambiarSalaManual()">⚙️ Cambiar Sala</button>
+        </div>
+      </div>
+
+      <!-- ESTADO 1: Botonera Normal -->
+      <div id="panelBotonera">
+        <div class="panic-grid">
+
+          <!-- 1. INSPECTORÍA -->
+          <div class="panic-card card-inspectoria" onclick="activarAlerta('inspectoria', '🚨 Solicitud de Inspectoría General')">
+            <div class="panic-icon">🚨</div>
+            <div class="panic-title">INSPECTORÍA</div>
+            <div class="panic-desc">Pelea, desorden grave, intruso o riesgo a la seguridad del aula.</div>
+            <div class="panic-hint">Pulsar para llamar</div>
+          </div>
+
+          <!-- 2. ENFERMERÍA -->
+          <div class="panic-card card-enfermeria" onclick="activarAlerta('enfermeria', '🩺 Emergencia Médica / Enfermería')">
+            <div class="panic-icon">🩺</div>
+            <div class="panic-title">ENFERMERÍA</div>
+            <div class="panic-desc">Accidente, desmayo, convulsión, estudiante lesionado o vómitos.</div>
+            <div class="panic-hint">Pulsar para llamar</div>
+          </div>
+
+          <!-- 3. CONVIVENCIA ESCOLAR -->
+          <div class="panic-card card-convivencia" onclick="activarAlerta('convivencia', '🤝 Solicitud de Convivencia Escolar')">
+            <div class="panic-icon">🤝</div>
+            <div class="panic-title">CONVIVENCIA</div>
+            <div class="panic-desc">Desregulación emocional severa, crisis, contención o mediación.</div>
+            <div class="panic-hint">Pulsar para llamar</div>
+          </div>
+
+          <!-- 4. PÁNICO GENERAL -->
+          <div class="panic-card card-general" onclick="activarAlerta('general', '🆘 ALERTA MÁXIMA DE PÁNICO')">
+            <div class="panic-icon">🆘</div>
+            <div class="panic-title">BOTÓN DE PÁNICO INMEDIATO</div>
+            <div class="panic-desc">Activa alerta general máxima en todos los computadores del colegio al mismo tiempo.</div>
+            <div class="panic-hint">Pulsar en situación extrema</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ESTADO 2: Pantalla de Alerta Activa -->
+      <div id="panelAlertaActiva" style="display: none;">
+        <div class="alerta-activa-banner" id="bannerAlerta">
+          <div class="alerta-activa-icon" id="alertaIcono">🚨</div>
+          <div class="alerta-activa-titulo" id="alertaTitulo">¡ALERTA ENVIADA!</div>
+          <div class="alerta-activa-detalles" id="alertaDetalles">
+            Se ha notificado a Inspectoría, Enfermería y Convivencia Escolar.
+          </div>
+
+          <div id="contenedorAtencion" style="display: none;">
+            <div class="alerta-activa-atencion" id="textoAtencion">
+              🏃 Personal en camino...
+            </div>
+          </div>
+
+          <div>
+            <button class="btn-cancelar-alerta" onclick="confirmarCancelacion()">
+              ⚠️ Cancelar Alerta (Fue un error / Falsa alarma)
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal para Seleccionar Sala la Primera Vez -->
+  <div class="modal-overlay" id="modalConfigSala" style="display: none;">
+    <div class="modal-card">
+      <h2>🏫 Configuración de este Computador</h2>
+      <p>Selecciona a qué sala de clases corresponde este equipo fijo. Esta configuración se guardará automáticamente en este navegador.</p>
+
+      <div class="form-group">
+        <label for="selectSalasModal">Seleccionar Sala:</label>
+        <select id="selectSalasModal" class="form-control"></select>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="guardarConfigSala()">Guardar Sala en este Equipo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Variables de estado
+    let socket = null;
+    let salaActual = { id: '', nombre: 'Sala No Configurada', pabellon: '' };
+    let alertaActualId = null;
+    let listaSalas = [];
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 1. Conectar WebSocket
+      conectarWebSocket();
+
+      // 2. Cargar salas disponibles
+      await cargarListaSalas();
+
+      // 3. Identificar la sala correspondiente
+      identificarSala();
+    });
+
+    // Conectar WebSocket
+    function conectarWebSocket() {
+      try {
+        socket = io();
+
+        socket.on('connect', () => {
+          actualizarEstadoConexion(true);
+        });
+
+        socket.on('disconnect', () => {
+          actualizarEstadoConexion(false);
+        });
+
+        // Escuchar cuando alguien toma la alerta
+        socket.on('alerta_actualizada', (alerta) => {
+          if (alerta.id === alertaActualId && alerta.estado === 'atendiendo') {
+            mostrarAtencionEnCamino(alerta);
+          }
+        });
+
+        // Escuchar cuando se resuelve
+        socket.on('alerta_resuelta', (alerta) => {
+          if (alerta.id === alertaActualId) {
+            finalizarAlertaEnPantalla('Alerta resuelta por el personal.');
+          }
+        });
+
+        // Escuchar cancelación
+        socket.on('alerta_cancelada', (alerta) => {
+          if (alerta.id === alertaActualId) {
+            finalizarAlertaEnPantalla('Alerta cancelada.');
+          }
+        });
+
+        // Actualización de lista de salas
+        socket.on('salas_actualizadas', (nuevasSalas) => {
+          listaSalas = nuevasSalas;
+          poblarSelectSalas();
+        });
+
+      } catch (err) {
+        console.warn('Socket no disponible, operando en modo HTTP:', err);
+        actualizarEstadoConexion(false);
+      }
+    }
+
+    function actualizarEstadoConexion(conectado) {
+      const dot = document.getElementById('statusDot');
+      const texto = document.getElementById('statusTexto');
+      if (conectado) {
+        dot.className = 'status-dot';
+        texto.textContent = 'En Línea';
+      } else {
+        dot.className = 'status-dot disconnected';
+        texto.textContent = 'Sin Conexión';
+      }
+    }
+
+    // Cargar salas desde la API
+    async function cargarListaSalas() {
+      try {
+        const res = await fetch('/api/salas');
+        listaSalas = await res.json();
+        poblarSelectSalas();
+      } catch (e) {
+        console.error('Error cargando salas:', e);
+      }
+    }
+
+    function poblarSelectSalas() {
+      const select = document.getElementById('selectSalasModal');
+      select.innerHTML = '';
+      listaSalas.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.nombre} (${s.pabellon || 'General'})`;
+        select.appendChild(opt);
+      });
+    }
+
+    // Determinar la sala por URL (?sala=101) o localStorage
+    function identificarSala() {
+      const params = new URLSearchParams(window.location.search);
+      const salaParam = params.get('sala') || params.get('id');
+
+      if (salaParam) {
+        const encontrada = listaSalas.find(s => 
+          s.id.toLowerCase() === salaParam.toLowerCase() || 
+          s.nombre.toLowerCase() === salaParam.toLowerCase()
+        );
+        if (encontrada) {
+          establecerSala(encontrada);
+          return;
+        } else {
+          establecerSala({ id: salaParam, nombre: salaParam, pabellon: 'Ubicación asignada por URL' });
+          return;
+        }
+      }
+
+      // Si no viene en la URL, revisar si ya se guardó antes en este navegador
+      const guardada = localStorage.getItem('colegio_sala_info');
+      if (guardada) {
+        try {
+          establecerSala(JSON.parse(guardada));
+          return;
+        } catch (e) {}
+      }
+
+      // Si no existe, abrir el modal para que elijan la sala
+      abrirModalConfig();
+    }
+
+    function establecerSala(infoSala) {
+      salaActual = infoSala;
+      localStorage.setItem('colegio_sala_info', JSON.stringify(infoSala));
+      document.getElementById('lblNombreSala').textContent = infoSala.nombre;
+      document.getElementById('lblPabellonSala').textContent = infoSala.pabellon || 'Ubicación identificada';
+      document.title = `Botón de Pánico - ${infoSala.nombre}`;
+      cerrarModalConfig();
+    }
+
+    function abrirModalConfig() {
+      document.getElementById('modalConfigSala').style.display = 'flex';
+    }
+
+    function cerrarModalConfig() {
+      document.getElementById('modalConfigSala').style.display = 'none';
+    }
+
+    function cambiarSalaManual() {
+      abrirModalConfig();
+    }
+
+    function guardarConfigSala() {
+      const idSeleccionado = document.getElementById('selectSalasModal').value;
+      const sala = listaSalas.find(s => s.id === idSeleccionado);
+      if (sala) {
+        establecerSala(sala);
+      }
+    }
+
+    // ======================================================
+    // ACTIVAR ALERTA
+    // ======================================================
+    async function activarAlerta(tipo, descripcion) {
+      // Feedback auditivo corto de confirmación en la sala
+      if (window.sistemaAudio) {
+        window.sistemaAudio.probarSonido();
+      }
+
+      const datosAlerta = {
+        sala: salaActual.nombre,
+        pabellon: salaActual.pabellon,
+        tipo: tipo,
+        mensaje: descripcion
+      };
+
+      try {
+        if (socket && socket.connected) {
+          socket.emit('emitir_alerta', datosAlerta);
+        } else {
+          // Fallback vía REST
+          const res = await fetch('/api/alerta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosAlerta)
+          });
+          const data = await res.json();
+          alertaActualId = data.alerta.id;
+        }
+
+        // Mostrar pantalla de alerta activa
+        mostrarPantallaAlertaActiva(tipo, descripcion);
+
+      } catch (e) {
+        alert('Error al enviar alerta. Por favor avisa directamente a Inspectoría.');
+        console.error(e);
+      }
+    }
+
+    // Escuchar alerta emitida para capturar nuestro propio ID
+    if (socket) {
+      socket.on('alerta_emitida', (alerta) => {
+        if (alerta.sala === salaActual.nombre && alerta.estado === 'pendiente') {
+          alertaActualId = alerta.id;
+        }
+      });
+    }
+
+    function mostrarPantallaAlertaActiva(tipo, descripcion) {
+      document.getElementById('panelBotonera').style.display = 'none';
+      const panelAlerta = document.getElementById('panelAlertaActiva');
+      panelAlerta.style.display = 'block';
+
+      const banner = document.getElementById('bannerAlerta');
+      banner.className = 'alerta-activa-banner';
+
+      const icono = document.getElementById('alertaIcono');
+      const titulo = document.getElementById('alertaTitulo');
+      const detalles = document.getElementById('alertaDetalles');
+      const contenedorAtencion = document.getElementById('contenedorAtencion');
+
+      contenedorAtencion.style.display = 'none';
+
+      if (tipo === 'enfermeria') {
+        icono.textContent = '🩺';
+        titulo.textContent = '¡ALERTA MÉDICA ENVIADA!';
+        detalles.textContent = 'Se ha solicitado auxilio a ENFERMERÍA e Inspectoría General.';
+      } else if (tipo === 'convivencia') {
+        icono.textContent = '🤝';
+        titulo.textContent = '¡ALERTA DE CONVIVENCIA ENVIADA!';
+        detalles.textContent = 'Se ha notificado al equipo de CONVIVENCIA ESCOLAR e Inspectoría.';
+      } else {
+        icono.textContent = '🚨';
+        titulo.textContent = '¡ALERTA DE INSPECTORÍA ENVIADA!';
+        detalles.textContent = 'Se ha notificado de inmediato a INSPECTORÍA GENERAL.';
+      }
+    }
+
+    function mostrarAtencionEnCamino(alerta) {
+      const banner = document.getElementById('bannerAlerta');
+      banner.className = 'alerta-activa-banner estado-atendiendo';
+
+      const contenedorAtencion = document.getElementById('contenedorAtencion');
+      const textoAtencion = document.getElementById('textoAtencion');
+      contenedorAtencion.style.display = 'block';
+
+      textoAtencion.textContent = `🏃 ¡ATENCIÓN EN CAMINO! ${alerta.atendidoPor || 'Personal'} va hacia la sala (a las ${alerta.horaAtencion}).`;
+      
+      if (window.sistemaAudio) {
+        window.sistemaAudio.reproducirTonoAtendido();
+      }
+    }
+
+    function confirmarCancelacion() {
+      if (confirm('¿Estás seguro de cancelar la alerta? Confirma si se trató de una falsa alarma o error.')) {
+        if (socket && alertaActualId) {
+          socket.emit('cancelar_alerta', { idAlerta: alertaActualId, motivo: 'Cancelada por el profesor en sala' });
+        }
+        finalizarAlertaEnPantalla('Alerta cancelada.');
+      }
+    }
+
+    function finalizarAlertaEnPantalla(mensaje) {
+      document.getElementById('panelAlertaActiva').style.display = 'none';
+      document.getElementById('panelBotonera').style.display = 'block';
+      alertaActualId = null;
+    }
+  </script>
+</body>
+</html>

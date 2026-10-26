@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Alertas - Inspectoría / Enfermería / Convivencia</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/audio.js"></script>
+</head>
+<body>
+
+  <!-- Encabezado Principal -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">🚨</span>
+      <span>Central de Monitoreo y Alertas del Colegio</span>
+    </div>
+    <div class="status-badge" id="conexionBadge">
+      <div class="status-dot disconnected" id="statusDot"></div>
+      <span id="statusTexto">Conectando...</span>
+    </div>
+  </header>
+
+  <!-- Barra de Sirena Activa (se muestra cuando hay una alerta pendiente) -->
+  <div id="bannerSirena" class="siren-banner" style="display: none;">
+    <div class="siren-banner-text">
+      <span>🔔</span>
+      <span id="sirenTexto">¡SIRENA SONANDO! HAY ALERTAS SIN ATENDER</span>
+    </div>
+    <button class="btn-silenciar" onclick="silenciarSirenaManual()">🔇 Silenciar Sonido</button>
+  </div>
+
+  <main class="main-content">
+    
+    <!-- Barra Superior de Control del Receptor -->
+    <div class="receptor-topbar">
+      <!-- Selector de Rol del Equipo -->
+      <div class="receptor-role-select">
+        <label for="selectRol">Perfil de este Computador:</label>
+        <select id="selectRol" class="select-control" onchange="cambiarRolReceptor()">
+          <option value="todos">🏢 Inspectoría General (Recibe TODAS)</option>
+          <option value="enfermeria">🩺 Enfermería (Médicas y Pánico)</option>
+          <option value="convivencia">🤝 Convivencia Escolar (Contención y Pánico)</option>
+          <option value="patio">🛡️ Inspector de Patio</option>
+        </select>
+      </div>
+
+      <!-- Controles de Sonido y Notificaciones de Windows -->
+      <div class="receptor-controls">
+        <button id="btnNotificaciones" class="btn-secondary" onclick="solicitarPermisoNotificaciones()">
+          🔔 Notificaciones de Windows
+        </button>
+
+        <button id="btnSonidoToggle" class="btn-sound-toggle sound-active" onclick="toggleSonidoReceptor()">
+          🔊 Sonido Activo
+        </button>
+
+        <button class="btn-secondary" onclick="probarSirenaSimulacro()">
+          ⚠️ Probar Sirena
+        </button>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: ALERTAS ACTIVAS -->
+    <section class="active-alerts-section">
+      <h2 class="section-title">
+        <span>🚨</span> Alertas Activas en Tiempo Real
+        <span id="contadorAlertas" class="status-badge" style="background: var(--danger); color: white;">0</span>
+      </h2>
+
+      <!-- Grilla de Alertas -->
+      <div id="gridAlertasActivas" class="alerts-grid">
+        <!-- Renderizado dinámicamente -->
+      </div>
+
+      <!-- Estado Vacío cuando no hay emergencias -->
+      <div id="emptyState" class="empty-state">
+        <div class="empty-state-icon">✅</div>
+        <h3>Sin alertas activas</h3>
+        <p>Todas las salas se encuentran en normalidad. Esta pantalla emitirá una alarma sonora inmediata ante cualquier llamada de auxilio.</p>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: HISTORIAL RECIENTE -->
+    <section class="history-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 class="section-title" style="margin-bottom: 0;">
+          <span>📋</span> Registro de Alertas del Día
+        </h2>
+        <button class="btn-secondary" onclick="cargarHistorial()">🔄 Actualizar Historial</button>
+      </div>
+
+      <div class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Sala / Ubicación</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Atendido por</th>
+              <th>Hora Atención</th>
+              <th>Resuelto a</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyHistorial">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--gray-600); padding: 2rem;">Cargando registro...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal para Identificar al Receptor que Atiende la Alerta -->
+  <div class="modal-overlay" id="modalIdentificacion" style="display: none;">
+    <div class="modal-card">
+      <h2>🏃 Ir a Atender la Sala</h2>
+      <p>Indica tu nombre para que los demás inspectores y la sala sepan quién va en camino.</p>
+
+      <div class="form-group">
+        <label for="txtNombreResponsable">Tu Nombre / Cargo:</label>
+        <input type="text" id="txtNombreResponsable" class="form-control" placeholder="Ej: Inspector Juan Pérez / Enf. Carmen">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="cerrarModalIdentificacion()">Cancelar</button>
+        <button class="btn-primary" onclick="confirmarAtencionAlerta()">Confirmar y Salir a la Sala</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+    let alertasActivas = [];
+    let historial = [];
+    let rolActual = localStorage.getItem('colegio_receptor_rol') || 'todos';
+    let nombreUsuario = localStorage.getItem('colegio_receptor_nombre') || '';
+    let idAlertaParaAtender = null;
+    let intervaloTimers = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Configurar selector de rol guardado
+      document.getElementById('selectRol').value = rolActual;
+      if (nombreUsuario) {
+        document.getElementById('txtNombreResponsable').value = nombreUsuario;
+      }
+
+      // Conectar WebSocket
+      conectarWebSocket();
+
+      // Cargar historial inicial
+      cargarHistorial();
+
+      // Iniciar temporizador de actualización de segundos transcurridos
+      intervaloTimers = setInterval(actualizarTiemposTranscurridos, 1000);
+
+      // Desbloquear audio con el primer clic del usuario
+      document.body.addEventListener('click', () => {
+        if (window.sistemaAudio) {
+          window.sistemaAudio.iniciar();
+        }
+      }, { once: true });
+    });
+
+    function conectarWebSocket() {
+      try {
+        socket = io();
+
+        socket.on('connect', () => {
+          actualizarEstadoConexion(true);
+        });
+
+        socket.on('disconnect', () => {
+          actualizarEstadoConexion(false);
+        });
+
+        // Estado inicial de alertas
+        socket.on('estado_inicial', (data) => {
+          alertasActivas = data.alertasActivas || [];
+          renderizarAlertas();
+          evaluarSirena();
+        });
+
+        // Nueva alerta entrante
+        socket.on('alerta_emitida', (nuevaAlerta) => {
+          alertasActivas.push(nuevaAlerta);
+          renderizarAlertas();
+          evaluarSirena();
+          dispararNotificacionEscritorio(nuevaAlerta);
+          cargarHistorial();
+        });
+
+        // Alerta actualizada (alguien tomó la alerta)
+        socket.on('alerta_actualizada', (alerta) => {
+          const index = alertasActivas.findIndex(a => a.id === alerta.id);
+          if (index !== -1) {
+            alertasActivas[index] = alerta;
+          }
+          renderizarAlertas();
+          evaluarSirena();
+          cargarHistorial();
+        });
+
+        // Alerta resuelta
+        socket.on('alerta_resuelta', (alerta) => {
+          alertasActivas = alertasActivas.filter(a => a.id !== alerta.id);
+          renderizarAlertas();
+          evaluarSirena();
+          cargarHistorial();
+        });
+
+        // Alerta cancelada
+        socket.on('alerta_cancelada', (alerta) => {
+          alertasActivas = alertasActivas.filter(a => a.id !== alerta.id);
+          renderizarAlertas();
+          evaluarSirena();
+          cargarHistorial();
+        });
+
+        // Prueba de sirena
+        socket.on('prueba_sirena', (datos) => {
+          if (window.sistemaAudio) {
+            window.sistemaAudio.reproducirSirenaInspectoria();
+            setTimeout(() => window.sistemaAudio.detenerSirena(), 3000);
+          }
+        });
+
+      } catch (err) {
+        console.error('Error conectando socket:', err);
+        actualizarEstadoConexion(false);
+      }
+    }
+
+    function actualizarEstadoConexion(conectado) {
+      const dot = document.getElementById('statusDot');
+      const texto = document.getElementById('statusTexto');
+      if (conectado) {
+        dot.className = 'status-dot';
+        texto.textContent = 'En Línea';
+      } else {
+        dot.className = 'status-dot disconnected';
+        texto.textContent = 'Sin Conexión';
+      }
+    }
+
+    function cambiarRolReceptor() {
+      rolActual = document.getElementById('selectRol').value;
+      localStorage.setItem('colegio_receptor_rol', rolActual);
+      renderizarAlertas();
+      evaluarSirena();
+    }
+
+    // Filtrar alertas según el rol asignado a este PC
+    function correspondeARol(alerta) {
+      if (rolActual === 'todos') return true;
+      if (alerta.tipo === 'general') return true;
+      if (rolActual === 'enfermeria' && (alerta.tipo === 'enfermeria' || alerta.tipo === 'general')) return true;
+      if (rolActual === 'convivencia' && (alerta.tipo === 'convivencia' || alerta.tipo === 'general')) return true;
+      if (rolActual === 'patio' && (alerta.tipo === 'inspectoria' || alerta.tipo === 'general')) return true;
+      return false;
+    }
+
+    // Renderizar tarjetas de alerta en pantalla
+    function renderizarAlertas() {
+      const contenedor = document.getElementById('gridAlertasActivas');
+      const emptyState = document.getElementById('emptyState');
+      const contador = document.getElementById('contadorAlertas');
+
+      const alertasFiltradas = alertasActivas.filter(correspondeARol);
+      contador.textContent = alertasFiltradas.length;
+
+      if (alertasFiltradas.length === 0) {
+        contenedor.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      contenedor.innerHTML = '';
+
+      alertasFiltradas.forEach(alerta => {
+        const card = document.createElement('div');
+        const esAtendiendo = alerta.estado === 'atendiendo';
+        card.className = `alert-card tipo-${alerta.tipo} ${esAtendiendo ? 'estado-atendiendo' : ''}`;
+
+        // Badge y textos
+        let badgeClass = 'badge-inspectoria';
+        let badgeTexto = 'INSPECTORÍA';
+        if (alerta.tipo === 'enfermeria') { badgeClass = 'badge-enfermeria'; badgeTexto = 'ENFERMERÍA'; }
+        if (alerta.tipo === 'convivencia') { badgeClass = 'badge-convivencia'; badgeTexto = 'CONVIVENCIA'; }
+        if (alerta.tipo === 'general') { badgeClass = 'badge-general'; badgeTexto = 'PÁNICO GENERAL'; }
+
+        const segundos = Math.floor((Date.now() - new Date(alerta.fechaHora).getTime()) / 1000);
+        const tiempoTexto = formatearTiempoTranscurrido(segundos);
+
+        card.innerHTML = `
+          <div>
+            <div class="alert-header">
+              <div>
+                <div class="alert-sala">${alerta.sala}</div>
+                <div class="alert-pabellon">${alerta.pabellon || 'Ubicación identificada'}</div>
+              </div>
+              <span class="alert-badge ${badgeClass}">${badgeTexto}</span>
+            </div>
+
+            <div style="margin: 0.75rem 0;">
+              <div class="alert-timer" id="timer_${alerta.id}" data-timestamp="${alerta.fechaHora}">
+                ⏱️ Hace ${tiempoTexto} (${alerta.horaLegible})
+              </div>
+            </div>
+
+            ${esAtendiendo ? `
+              <div class="alert-atendido-por">
+                🏃 Atendido por: <strong>${alerta.atendidoPor}</strong> (${alerta.horaAtencion})
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="alert-actions">
+            ${!esAtendiendo ? `
+              <button class="btn-atender" onclick="abrirModalAtencion('${alerta.id}')">
+                🏃 Voy en Camino
+              </button>
+            ` : `
+              <button class="btn-resolver" onclick="marcarResuelta('${alerta.id}')">
+                ✅ Marcar Resuelta
+              </button>
+            `}
+          </div>
+        `;
+
+        contenedor.appendChild(card);
+      });
+    }
+
+    function formatearTiempoTranscurrido(segundos) {
+      if (segundos < 60) return `${segundos} seg`;
+      const minutos = Math.floor(segundos / 60);
+      const segRest = segundos % 60;
+      return `${minutos}m ${segRest}s`;
+    }
+
+    function actualizarTiemposTranscurridos() {
+      document.querySelectorAll('[data-timestamp]').forEach(el => {
+        const ts = el.getAttribute('data-timestamp');
+        const segundos = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+        const texto = formatearTiempoTranscurrido(segundos);
+        const horaOriginal = el.textContent.split('(')[1] || '';
+        el.textContent = `⏱️ Hace ${texto} (${horaOriginal}`;
+      });
+    }
+
+    // ======================================================
+    // LÓGICA DE SIRENA Y AUDIO
+    // ======================================================
+    function evaluarSirena() {
+      // Hay alertas pendientes para nuestro rol que NADIE ha tomado todavía?
+      const pendientes = alertasActivas.filter(a => correspondeARol(a) && a.estado === 'pendiente');
+      const bannerSirena = document.getElementById('bannerSirena');
+      const sirenTexto = document.getElementById('sirenTexto');
+
+      if (pendientes.length > 0) {
+        bannerSirena.style.display = 'flex';
+        const primera = pendientes[0];
+        sirenTexto.textContent = `¡ALERTA SIN ATENDER EN ${primera.sala.toUpperCase()}! (${primera.tipo.toUpperCase()})`;
+
+        if (window.sistemaAudio && !window.sistemaAudio.sonando) {
+          window.sistemaAudio.reproducirSegunTipo(primera.tipo);
+        }
+      } else {
+        bannerSirena.style.display = 'none';
+        if (window.sistemaAudio) {
+          window.sistemaAudio.detenerSirena();
+        }
+      }
+    }
+
+    function silenciarSirenaManual() {
+      if (window.sistemaAudio) {
+        window.sistemaAudio.detenerSirena();
+      }
+      document.getElementById('bannerSirena').style.display = 'none';
+    }
+
+    function toggleSonidoReceptor() {
+      const btn = document.getElementById('btnSonidoToggle');
+      if (window.sistemaAudio) {
+        const silenciado = window.sistemaAudio.toggleSilencio();
+        if (silenciado) {
+          btn.className = 'btn-sound-toggle sound-muted';
+          btn.textContent = '🔇 Sonido Silenciado';
+        } else {
+          btn.className = 'btn-sound-toggle sound-active';
+          btn.textContent = '🔊 Sonido Activo';
+          evaluarSirena();
+        }
+      }
+    }
+
+    function probarSirenaSimulacro() {
+      if (window.sistemaAudio) {
+        window.sistemaAudio.reproducirSirenaInspectoria();
+        setTimeout(() => window.sistemaAudio.detenerSirena(), 3500);
+      }
+    }
+
+    // ======================================================
+    // NOTIFICACIONES NATIVAS DE WINDOWS
+    // ======================================================
+    function solicitarPermisoNotificaciones() {
+      if (!('Notification' in window)) {
+        alert('Este navegador no soporta notificaciones de escritorio.');
+        return;
+      }
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification('🚨 Sistema de Alertas Escolar', {
+            body: 'Notificaciones activadas. Recibirás avisos aun con la ventana minimizada.',
+            icon: '🏫'
+          });
+          document.getElementById('btnNotificaciones').textContent = '🔔 Notificaciones Activas';
+        }
+      });
+    }
+
+    function dispararNotificacionEscritorio(alerta) {
+      if (!correspondeARol(alerta)) return;
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notif = new Notification(`🚨 ¡EMERGENCIA EN ${alerta.sala.toUpperCase()}!`, {
+          body: `Tipo: ${alerta.tipo.toUpperCase()} - Hora: ${alerta.horaLegible}. Pulsa para ver detalles.`,
+          requireInteraction: true
+        });
+        notif.onclick = () => {
+          window.focus();
+        };
+      }
+    }
+
+    // ======================================================
+    // ATENCIÓN Y RESOLUCIÓN DE ALERTAS
+    // ======================================================
+    function abrirModalAtencion(idAlerta) {
+      idAlertaParaAtender = idAlerta;
+      const guardado = localStorage.getItem('colegio_receptor_nombre');
+      if (guardado) {
+        // Si ya guardó su nombre antes, tomar de una vez para máxima rapidez
+        ejecutarAtencion(guardado);
+      } else {
+        document.getElementById('modalIdentificacion').style.display = 'flex';
+        document.getElementById('txtNombreResponsable').focus();
+      }
+    }
+
+    function cerrarModalIdentificacion() {
+      document.getElementById('modalIdentificacion').style.display = 'none';
+      idAlertaParaAtender = null;
+    }
+
+    function confirmarAtencionAlerta() {
+      const nombre = document.getElementById('txtNombreResponsable').value.trim();
+      if (!nombre) {
+        alert('Por favor escribe tu nombre o cargo para registrar la atención.');
+        return;
+      }
+      localStorage.setItem('colegio_receptor_nombre', nombre);
+      cerrarModalIdentificacion();
+      ejecutarAtencion(nombre);
+    }
+
+    function ejecutarAtencion(nombre) {
+      if (!idAlertaParaAtender) return;
+      if (socket) {
+        socket.emit('atender_alerta', {
+          idAlerta: idAlertaParaAtender,
+          nombreResponsable: nombre,
+          rol: rolActual
+        });
+      }
+      silenciarSirenaManual();
+      idAlertaParaAtender = null;
+    }
+
+    function marcarResuelta(idAlerta) {
+      if (confirm('¿Confirmas que la situación en esta sala ya fue resuelta y se puede cerrar la alerta?')) {
+        const nombre = localStorage.getItem('colegio_receptor_nombre') || 'Inspector';
+        if (socket) {
+          socket.emit('resolver_alerta', {
+            idAlerta: idAlerta,
+            resueltaPor: nombre
+          });
+        }
+      }
+    }
+
+    // ======================================================
+    // CARGAR HISTORIAL RECIENTE
+    // ======================================================
+    async function cargarHistorial() {
+      try {
+        const res = await fetch('/api/historial');
+        historial = await res.json();
+        renderizarHistorial();
+      } catch (e) {
+        console.error('Error cargando historial:', e);
+      }
+    }
+
+    function renderizarHistorial() {
+      const tbody = document.getElementById('tbodyHistorial');
+      if (historial.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--gray-600); padding: 1.5rem;">No hay registros previos.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      // Mostrar del más reciente al más antiguo
+      const ordenado = [...historial].reverse();
+
+      ordenado.forEach(item => {
+        const tr = document.createElement('tr');
+        let estadoBadge = `<span class="status-badge" style="background:#fee2e2; color:#dc2626;">Pendiente</span>`;
+        if (item.estado === 'atendiendo') estadoBadge = `<span class="status-badge" style="background:#e0f2fe; color:#0369a1;">En atención</span>`;
+        if (item.estado === 'resuelta') estadoBadge = `<span class="status-badge" style="background:#dcfce7; color:#15803d;">Resuelta</span>`;
+        if (item.estado === 'cancelada') estadoBadge = `<span class="status-badge" style="background:#f1f5f9; color:#475569;">Falsa alarma</span>`;
+
+        tr.innerHTML = `
+          <td><strong>${item.horaLegible}</strong></td>
+          <td><strong>${item.sala}</strong> <span style="font-size:0.8rem; color:#64748b;">(${item.pabellon || '-'})</span></td>
+          <td><span style="text-transform:uppercase; font-size:0.8rem; font-weight:700;">${item.tipo}</span></td>
+          <td>${estadoBadge}</td>
+          <td>${item.atendidoPor || '-'}</td>
+          <td>${item.horaAtencion || '-'}</td>
+          <td>${item.horaResolucion || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>

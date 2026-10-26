@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demostración Simulador - Botón de Pánico Escolar</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/audio.js"></script>
+  <style>
+    .split-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .split-container { grid-template-columns: 1fr; }
+    }
+    .panel-preview {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-lg);
+      border-top: 6px solid var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">🚨</span>
+      <span>Simulador en Vivo: Botón de Pánico Escolar (Modo Prueba Rápida)</span>
+    </div>
+    <div class="status-badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">
+      ● Modo Demostración Activo
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div style="background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 0.75rem; padding: 1rem 1.5rem; color: #0369a1; font-size: 0.95rem; margin-bottom: 1rem;">
+      💡 <strong>¿Cómo funciona esta prueba?</strong> A la izquierda tienes la pantalla de una sala (ej: Sala 101). A la derecha tienes el computador de Inspectoría / Enfermería. Pulsa cualquier botón de pánico en la izquierda y verás cómo suena la alarma y parpadea en tiempo real en la derecha.
+    </div>
+
+    <div class="split-container">
+      
+      <!-- IZQUIERDA: PANTALLA DE SALA -->
+      <div class="panel-preview" style="border-top-color: var(--danger);">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.25rem; color: var(--dark);">💻 Sala 204 (2° Piso)</h2>
+        <p style="color: var(--gray-600); font-size: 0.85rem; margin-bottom: 1.5rem;">Computador fijo del profesor</p>
+
+        <div id="simBotonera" class="panic-grid" style="grid-template-columns: 1fr;">
+          <div class="panic-card card-inspectoria" onclick="simularAlerta('inspectoria', 'Inspectoría General')">
+            <div class="panic-icon" style="font-size: 2.5rem;">🚨</div>
+            <div class="panic-title">SOLICITAR INSPECTORÍA</div>
+            <div class="panic-desc">Pelea, desorden grave o riesgo inminente.</div>
+          </div>
+
+          <div class="panic-card card-enfermeria" onclick="simularAlerta('enfermeria', 'Enfermería')">
+            <div class="panic-icon" style="font-size: 2.5rem;">🩺</div>
+            <div class="panic-title">EMERGENCIA MÉDICA</div>
+            <div class="panic-desc">Accidente, desmayo o lesión de estudiante.</div>
+          </div>
+
+          <div class="panic-card card-convivencia" onclick="simularAlerta('convivencia', 'Convivencia Escolar')">
+            <div class="panic-icon" style="font-size: 2.5rem;">🤝</div>
+            <div class="panic-title">CONVIVENCIA ESCOLAR</div>
+            <div class="panic-desc">Desregulación emocional o contención urgente.</div>
+          </div>
+        </div>
+
+        <!-- Alerta Activa en la Sala -->
+        <div id="simAlertaActiva" style="display: none; text-align: center; padding: 2rem 1rem; background: #fef2f2; border: 3px solid #ef4444; border-radius: 1rem;">
+          <div style="font-size: 3.5rem;">🚨</div>
+          <h3 id="simAlertaTitulo" style="color: #dc2626; font-size: 1.5rem; margin: 0.5rem 0;">¡ALERTA ENVIADA!</h3>
+          <p id="simAlertaDetalles" style="color: #475569; font-size: 1rem; margin-bottom: 1rem;">Esperando respuesta de Inspectoría...</p>
+          <div id="simAtendidoMsg" style="display: none; background: #e0f2fe; color: #0369a1; padding: 0.75rem; border-radius: 0.5rem; font-weight: 700; margin-bottom: 1rem;"></div>
+          <button class="btn-cancelar-alerta" onclick="simResetear()">Cancelar Alerta</button>
+        </div>
+      </div>
+
+      <!-- DERECHA: PANTALLA RECEPTOR -->
+      <div class="panel-preview" style="border-top-color: var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div>
+            <h2 style="font-size: 1.3rem; color: var(--dark); margin: 0;">🏢 PC Inspectoría / Enfermería</h2>
+            <p style="color: var(--gray-600); font-size: 0.85rem;">Monitoreo central en vivo</p>
+          </div>
+          <button class="btn-secondary" onclick="window.sistemaAudio.detenerSirena()">🔇 Silenciar</button>
+        </div>
+
+        <div id="simReceptorVacio" style="text-align: center; padding: 3rem 1rem; color: #64748b;">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;">✅</div>
+          <div style="font-weight: 700; font-size: 1.1rem; color: #1e293b;">Sin emergencias activas</div>
+          <div style="font-size: 0.9rem;">Cuando una sala pulse un botón, sonará la sirena aquí.</div>
+        </div>
+
+        <div id="simReceptorAlerta" style="display: none; background: #fff1f2; border: 3px solid #e11d48; border-radius: 1rem; padding: 1.5rem; animation: pulse-border 1s infinite;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div>
+              <div style="font-size: 1.8rem; font-weight: 900; color: #0f172a;">SALA 204</div>
+              <div style="color: #64748b; font-size: 0.9rem; font-weight: 600;">Pabellón 1 - Piso 2</div>
+            </div>
+            <span id="simBadge" class="status-badge" style="background: #fee2e2; color: #dc2626; font-weight: 800;">INSPECTORÍA</span>
+          </div>
+
+          <div id="simStatusTexto" style="color: #dc2626; font-weight: 800; font-size: 1.1rem; margin-bottom: 1.25rem;">
+            🚨 ¡LLAMADO URGENTE EN CURSO!
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="btnSimAtender" class="btn-atender" onclick="simAtenderAlerta()">
+              🏃 Voy en Camino
+            </button>
+            <button id="btnSimResolver" class="btn-resolver" onclick="simResolverAlerta()" style="display: none;">
+              ✅ Marcar Resuelta
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let alertaActual = null;
+
+    function simularAlerta(tipo, nombreTipo) {
+      alertaActual = { tipo, nombreTipo, hora: new Date().toLocaleTimeString() };
+
+      // Ocultar botonera en sala, mostrar pantalla activa
+      document.getElementById('simBotonera').style.display = 'none';
+      document.getElementById('simAlertaActiva').style.display = 'block';
+      document.getElementById('simAtendidoMsg').style.display = 'none';
+      document.getElementById('simAlertaTitulo').textContent = `¡SOLICITUD A ${nombreTipo.toUpperCase()} ENVIADA!`;
+      document.getElementById('simAlertaDetalles').textContent = `Aviso transmitido a las ${alertaActual.hora}. Esperando respuesta.`;
+
+      // En el receptor: mostrar tarjeta de alerta
+      document.getElementById('simReceptorVacio').style.display = 'none';
+      const panelReceptor = document.getElementById('simReceptorAlerta');
+      panelReceptor.style.display = 'block';
+      panelReceptor.className = 'alert-card';
+      document.getElementById('btnSimAtender').style.display = 'block';
+      document.getElementById('btnSimResolver').style.display = 'none';
+
+      const badge = document.getElementById('simBadge');
+      badge.textContent = nombreTipo.toUpperCase();
+
+      // Disparar sonido de sirena
+      if (window.sistemaAudio) {
+        window.sistemaAudio.reproducirSegunTipo(tipo);
+      }
+    }
+
+    function simAtenderAlerta() {
+      // Detener sirena
+      if (window.sistemaAudio) {
+        window.sistemaAudio.detenerSirena();
+        window.sistemaAudio.reproducirTonoAtendido();
+      }
+
+      document.getElementById('btnSimAtender').style.display = 'none';
+      document.getElementById('btnSimResolver').style.display = 'block';
+      document.getElementById('simStatusTexto').innerHTML = '✅ En atención por: <strong>Inspector de Turno</strong>';
+
+      // Actualizar pantalla de la sala
+      const msg = document.getElementById('simAtendidoMsg');
+      msg.style.display = 'block';
+      msg.textContent = '🏃 ¡Inspector va en camino a tu sala!';
+      document.getElementById('simAlertaActiva').style.background = '#eff6ff';
+      document.getElementById('simAlertaActiva').style.borderColor = '#0284c7';
+    }
+
+    function simResolverAlerta() {
+      simResetear();
+    }
+
+    function simResetear() {
+      if (window.sistemaAudio) {
+        window.sistemaAudio.detenerSirena();
+      }
+      document.getElementById('simBotonera').style.display = 'grid';
+      document.getElementById('simAlertaActiva').style.display = 'none';
+      document.getElementById('simReceptorVacio').style.display = 'block';
+      document.getElementById('simReceptorAlerta').style.display = 'none';
+      alertaActual = null;
+    }
+  </script>
+</body>
+</html>
