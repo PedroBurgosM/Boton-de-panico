@@ -90,19 +90,22 @@
   </main>
 
   <script>
-    // Cargar información de red desde el servidor
-    fetch('/api/info')
-      .then(res => res.json())
-      .then(info => {
-        const urlCompleta = `http://${info.ip}:${info.puerto}`;
-        document.getElementById('infoIp').innerHTML = `IP Servidor: <strong>${info.ip}:${info.puerto}</strong>`;
-        document.getElementById('boxUrlRed').innerHTML = `http://${info.ip}:${info.puerto}/sala.html`;
-      })
-      .catch(() => {
-        const local = window.location.origin;
-        document.getElementById('infoIp').textContent = 'Modo Local';
-        document.getElementById('boxUrlRed').textContent = `${local}/sala.html`;
-      });
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const publicOrigin = window.location.origin;
+      document.getElementById('infoIp').innerHTML = `Servidor en la Nube: <strong>${window.location.hostname}</strong>`;
+      document.getElementById('boxUrlRed').innerHTML = `${publicOrigin}/sala`;
+    } else {
+      fetch('/api/info')
+        .then(res => res.json())
+        .then(info => {
+          document.getElementById('infoIp').innerHTML = `IP Servidor: <strong>${info.ip}:${info.puerto}</strong>`;
+          document.getElementById('boxUrlRed').innerHTML = `http://${info.ip}:${info.puerto}/sala`;
+        })
+        .catch(() => {
+          document.getElementById('infoIp').textContent = 'Modo Local';
+          document.getElementById('boxUrlRed').textContent = `${window.location.origin}/sala`;
+        });
+    }
   </script>
 </body>
 </html>

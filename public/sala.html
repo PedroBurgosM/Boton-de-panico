@@ -105,16 +105,27 @@
   <!-- Modal para Seleccionar Sala la Primera Vez -->
   <div class="modal-overlay" id="modalConfigSala" style="display: none;">
     <div class="modal-card">
-      <h2>🏫 Configuración de este Computador</h2>
-      <p>Selecciona a qué sala de clases corresponde este equipo fijo. Esta configuración se guardará automáticamente en este navegador.</p>
+      <h2>🏫 Asignar Sala a este Computador</h2>
+      <p>Selecciona la sala de este equipo o escribe su nombre si es una sala nueva.</p>
 
       <div class="form-group">
-        <label for="selectSalasModal">Seleccionar Sala:</label>
-        <select id="selectSalasModal" class="form-control"></select>
+        <label for="selectSalasModal">Seleccionar de la lista:</label>
+        <select id="selectSalasModal" class="form-control" onchange="alSeleccionarSelectModal()"></select>
+      </div>
+
+      <div class="form-group">
+        <label for="txtNombreSalaPersonalizada">O escribir nombre directamente:</label>
+        <input type="text" id="txtNombreSalaPersonalizada" class="form-control" placeholder="Ej: Sala 101, Lab de Computación">
+      </div>
+
+      <div class="form-group">
+        <label for="txtPabellonPersonalizado">Pabellón / Piso (opcional):</label>
+        <input type="text" id="txtPabellonPersonalizado" class="form-control" placeholder="Ej: Pabellón 1 - Piso 2">
       </div>
 
       <div class="modal-actions">
-        <button class="btn-primary" onclick="guardarConfigSala()">Guardar Sala en este Equipo</button>
+        <button class="btn-secondary" onclick="cerrarModalConfig()">Cerrar</button>
+        <button class="btn-primary" onclick="guardarConfigSala()">✅ Guardar Sala</button>
       </div>
     </div>
   </div>
@@ -209,7 +220,7 @@
 
     function poblarSelectSalas() {
       const select = document.getElementById('selectSalasModal');
-      select.innerHTML = '';
+      select.innerHTML = '<option value="">-- Selecciona de la lista --</option>';
       listaSalas.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id;
@@ -218,21 +229,38 @@
       });
     }
 
+    function alSeleccionarSelectModal() {
+      const idSeleccionado = document.getElementById('selectSalasModal').value;
+      const sala = listaSalas.find(s => s.id === idSeleccionado);
+      if (sala) {
+        document.getElementById('txtNombreSalaPersonalizada').value = sala.nombre;
+        document.getElementById('txtPabellonPersonalizado').value = sala.pabellon || '';
+      }
+    }
+
     // Determinar la sala por URL (?sala=101) o localStorage
     function identificarSala() {
       const params = new URLSearchParams(window.location.search);
-      const salaParam = params.get('sala') || params.get('id');
+      const rawParam = params.get('sala') || params.get('id');
 
-      if (salaParam) {
+      if (rawParam) {
+        const cleanParam = decodeURIComponent(rawParam).trim();
         const encontrada = listaSalas.find(s => 
-          s.id.toLowerCase() === salaParam.toLowerCase() || 
-          s.nombre.toLowerCase() === salaParam.toLowerCase()
+          s.id.toLowerCase() === cleanParam.toLowerCase() || 
+          s.nombre.toLowerCase() === cleanParam.toLowerCase() ||
+          s.id.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanParam.toLowerCase().replace(/[^a-z0-9]/g, '') ||
+          s.nombre.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanParam.toLowerCase().replace(/[^a-z0-9]/g, '')
         );
+
         if (encontrada) {
-          establecerSala(encontrada);
+          establecerSala(encontrada, false);
           return;
         } else {
-          establecerSala({ id: salaParam, nombre: salaParam, pabellon: 'Ubicación asignada por URL' });
+          establecerSala({
+            id: cleanParam.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            nombre: cleanParam,
+            pabellon: 'Ubicación identificada'
+          }, false);
           return;
         }
       }
@@ -241,7 +269,7 @@
       const guardada = localStorage.getItem('colegio_sala_info');
       if (guardada) {
         try {
-          establecerSala(JSON.parse(guardada));
+          establecerSala(JSON.parse(guardada), false);
           return;
         } catch (e) {}
       }
@@ -250,17 +278,29 @@
       abrirModalConfig();
     }
 
-    function establecerSala(infoSala) {
+    function establecerSala(infoSala, actualizarUrl = true) {
       salaActual = infoSala;
       localStorage.setItem('colegio_sala_info', JSON.stringify(infoSala));
       document.getElementById('lblNombreSala').textContent = infoSala.nombre;
       document.getElementById('lblPabellonSala').textContent = infoSala.pabellon || 'Ubicación identificada';
       document.title = `Botón de Pánico - ${infoSala.nombre}`;
+
+      if (actualizarUrl) {
+        try {
+          const nuevaUrl = window.location.pathname + '?sala=' + encodeURIComponent(infoSala.nombre);
+          window.history.replaceState({ sala: infoSala.nombre }, '', nuevaUrl);
+        } catch (e) {}
+      }
+
       cerrarModalConfig();
     }
 
     function abrirModalConfig() {
       document.getElementById('modalConfigSala').style.display = 'flex';
+      if (salaActual && salaActual.nombre) {
+        document.getElementById('txtNombreSalaPersonalizada').value = salaActual.nombre;
+        document.getElementById('txtPabellonPersonalizado').value = salaActual.pabellon || '';
+      }
     }
 
     function cerrarModalConfig() {
@@ -272,11 +312,27 @@
     }
 
     function guardarConfigSala() {
+      const nombreManual = document.getElementById('txtNombreSalaPersonalizada').value.trim();
+      const pabellonManual = document.getElementById('txtPabellonPersonalizado').value.trim();
+
+      if (nombreManual) {
+        const idManual = nombreManual.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        establecerSala({
+          id: idManual,
+          nombre: nombreManual,
+          pabellon: pabellonManual || 'Ubicación registrada'
+        }, true);
+        return;
+      }
+
       const idSeleccionado = document.getElementById('selectSalasModal').value;
       const sala = listaSalas.find(s => s.id === idSeleccionado);
       if (sala) {
-        establecerSala(sala);
+        establecerSala(sala, true);
+        return;
       }
+
+      alert('Por favor selecciona una sala de la lista o escribe el nombre de la sala.');
     }
 
     // ======================================================

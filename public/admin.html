@@ -114,13 +114,20 @@
     });
 
     async function detectarHost() {
+      // Si estamos en Render o en cualquier dominio externo, usar siempre la URL del navegador
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        hostBase = window.location.origin;
+        return;
+      }
       try {
         const res = await fetch('/api/info');
         const data = await res.json();
         if (data.ip && data.ip !== 'localhost') {
           hostBase = `http://${data.ip}:${data.puerto}`;
         }
-      } catch (e) {}
+      } catch (e) {
+        hostBase = window.location.origin;
+      }
     }
 
     async function cargarSalas() {
@@ -145,11 +152,12 @@
       tbody.innerHTML = '';
       salas.forEach((sala, index) => {
         const tr = document.createElement('tr');
-        const urlSala = `${hostBase}/sala.html?sala=${encodeURIComponent(sala.id || sala.nombre)}`;
+        const nombreParaUrl = encodeURIComponent(sala.nombre);
+        const urlSala = `${hostBase}/sala?sala=${nombreParaUrl}`;
         const comandoAcceso = `chrome.exe --app="${urlSala}"`;
 
         tr.innerHTML = `
-          <td><strong>${sala.nombre}</strong></td>
+          <td><strong style="font-size: 1.05rem;">${sala.nombre}</strong></td>
           <td><span style="color: #64748b;">${sala.pabellon || '-'}</span></td>
           <td>
             <button class="btn-secondary" onclick="copiarTexto('${urlSala}')" style="font-size: 0.8rem;">
@@ -162,11 +170,14 @@
             </button>
           </td>
           <td>
-            <div style="display: flex; gap: 0.5rem;">
-              <a href="${urlSala}" target="_blank" class="btn-secondary" style="text-decoration: none; font-size: 0.8rem; background: #e0f2fe; color: #0284c7;">
-                ↗ Probar
+            <div style="display: flex; gap: 0.35rem;">
+              <button onclick="editarSalaPrompt(${index})" class="btn-secondary" style="font-size: 0.8rem; background: #fef3c7; color: #92400e;" title="Editar nombre de la sala">
+                ✏️
+              </button>
+              <a href="${urlSala}" target="_blank" class="btn-secondary" style="text-decoration: none; font-size: 0.8rem; background: #e0f2fe; color: #0284c7;" title="Probar botón de esta sala">
+                ↗
               </a>
-              <button onclick="eliminarSala(${index})" class="btn-secondary" style="font-size: 0.8rem; background: #fee2e2; color: #dc2626;">
+              <button onclick="eliminarSala(${index})" class="btn-secondary" style="font-size: 0.8rem; background: #fee2e2; color: #dc2626;" title="Eliminar sala">
                 ✕
               </button>
             </div>
@@ -174,6 +185,23 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    async function editarSalaPrompt(index) {
+      const sala = salas[index];
+      const nuevoNombre = prompt('Editar nombre de la sala:', sala.nombre);
+      if (nuevoNombre === null || !nuevoNombre.trim()) return;
+
+      const nuevoPabellon = prompt('Editar pabellón / ubicación:', sala.pabellon || '');
+
+      salas[index].nombre = nuevoNombre.trim();
+      salas[index].id = nuevoNombre.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
+      if (nuevoPabellon !== null) {
+        salas[index].pabellon = nuevoPabellon.trim();
+      }
+
+      await guardarSalasEnServidor();
+      renderizarTablaSalas();
     }
 
     async function agregarSala(e) {
