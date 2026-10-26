@@ -159,23 +159,56 @@
           actualizarEstadoConexion(false);
         });
 
-        // Escuchar cuando alguien toma la alerta
+        // Estado inicial al conectar
+        socket.on('estado_inicial', (data) => {
+          if (data && data.alertasActivas) {
+            const miAlerta = data.alertasActivas.find(a => 
+              salaActual && a.sala && a.sala.toLowerCase().trim() === salaActual.nombre.toLowerCase().trim()
+            );
+            if (miAlerta) {
+              alertaActualId = miAlerta.id;
+              if (miAlerta.estado === 'atendiendo') {
+                mostrarAtencionEnCamino(miAlerta);
+              }
+            } else if (document.getElementById('panelAlertaActiva').style.display === 'block') {
+              // Si ya no existe alerta activa en el servidor para esta sala, restaurar botonera
+              document.getElementById('panelAlertaActiva').style.display = 'none';
+              document.getElementById('panelBotonera').style.display = 'block';
+              alertaActualId = null;
+            }
+          }
+        });
+
+        // Alerta emitida (capturar el ID asignado por el servidor)
+        socket.on('alerta_emitida', (alerta) => {
+          if (salaActual && alerta.sala && alerta.sala.toLowerCase().trim() === salaActual.nombre.toLowerCase().trim()) {
+            alertaActualId = alerta.id;
+          }
+        });
+
+        // Escuchar cuando alguien toma la alerta ("Voy en camino")
         socket.on('alerta_actualizada', (alerta) => {
-          if (alerta.id === alertaActualId && alerta.estado === 'atendiendo') {
+          const esEstaSala = (alerta.id === alertaActualId) || 
+            (salaActual && alerta.sala && alerta.sala.toLowerCase().trim() === salaActual.nombre.toLowerCase().trim());
+          if (esEstaSala && alerta.estado === 'atendiendo') {
             mostrarAtencionEnCamino(alerta);
           }
         });
 
-        // Escuchar cuando se resuelve
+        // Escuchar cuando se resuelve la alerta por Inspectoría
         socket.on('alerta_resuelta', (alerta) => {
-          if (alerta.id === alertaActualId) {
-            finalizarAlertaEnPantalla('Alerta resuelta por el personal.');
+          const esEstaSala = (alerta.id === alertaActualId) || 
+            (salaActual && alerta.sala && alerta.sala.toLowerCase().trim() === salaActual.nombre.toLowerCase().trim());
+          if (esEstaSala) {
+            finalizarAlertaEnPantalla(`La situación fue resuelta por ${alerta.resueltaPor || 'el personal de Inspectoría'}.`);
           }
         });
 
         // Escuchar cancelación
         socket.on('alerta_cancelada', (alerta) => {
-          if (alerta.id === alertaActualId) {
+          const esEstaSala = (alerta.id === alertaActualId) || 
+            (salaActual && alerta.sala && alerta.sala.toLowerCase().trim() === salaActual.nombre.toLowerCase().trim());
+          if (esEstaSala) {
             finalizarAlertaEnPantalla('Alerta cancelada.');
           }
         });
@@ -371,14 +404,7 @@
       }
     }
 
-    // Escuchar alerta emitida para capturar nuestro propio ID
-    if (socket) {
-      socket.on('alerta_emitida', (alerta) => {
-        if (alerta.sala === salaActual.nombre && alerta.estado === 'pendiente') {
-          alertaActualId = alerta.id;
-        }
-      });
-    }
+
 
     function mostrarPantallaAlertaActiva(tipo, descripcion) {
       document.getElementById('panelBotonera').style.display = 'none';
@@ -435,9 +461,32 @@
     }
 
     function finalizarAlertaEnPantalla(mensaje) {
-      document.getElementById('panelAlertaActiva').style.display = 'none';
-      document.getElementById('panelBotonera').style.display = 'block';
-      alertaActualId = null;
+      const banner = document.getElementById('bannerAlerta');
+      if (banner) {
+        banner.className = 'alerta-activa-banner';
+        banner.style.borderColor = '#16a34a';
+        banner.style.background = '#f0fdf4';
+        banner.style.boxShadow = '0 0 25px rgba(22, 163, 74, 0.4)';
+        
+        document.getElementById('alertaIcono').textContent = '✅';
+        document.getElementById('alertaTitulo').textContent = '¡ALERTA RESUELTA!';
+        document.getElementById('alertaTitulo').style.color = '#15803d';
+        document.getElementById('alertaDetalles').textContent = mensaje || 'La situación ha sido atendida y cerrada con éxito.';
+        document.getElementById('contenedorAtencion').style.display = 'none';
+      }
+
+      // Dejar visible la confirmación verde 2 segundos y volver a la botonera normal
+      setTimeout(() => {
+        document.getElementById('panelAlertaActiva').style.display = 'none';
+        document.getElementById('panelBotonera').style.display = 'block';
+        if (banner) {
+          banner.style.borderColor = '';
+          banner.style.background = '';
+          banner.style.boxShadow = '';
+          document.getElementById('alertaTitulo').style.color = '';
+        }
+        alertaActualId = null;
+      }, 2000);
     }
   </script>
 </body>
