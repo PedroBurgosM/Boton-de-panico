@@ -3,10 +3,622 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Alertas - Inspectoría / Enfermería / Convivencia</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>Central de Monitoreo y Alertas - Inspectoría</title>
+  <link rel="stylesheet" href="css/styles.css?v=5.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/audio.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --bg-dark: #080c16;
+      --surface-glass: rgba(18, 24, 40, 0.75);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(255, 255, 255, 0.16);
+      --neon-red: #ff3355;
+      --neon-cyan: #06b6d4;
+      --neon-emerald: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: #070a12;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.18) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(225, 29, 72, 0.1) 0%, transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR CENTRO DE COMANDO */
+    .app-header {
+      background: rgba(10, 15, 28, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+      padding: 0.9rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .brand-icon {
+      font-size: 1.6rem;
+      filter: drop-shadow(0 0 10px rgba(225, 29, 72, 0.6));
+    }
+
+    .header-center-info {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .clock-display {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 1px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.95rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--neon-emerald);
+      box-shadow: 0 0 10px var(--neon-emerald);
+      animation: pulse-beacon 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background-color: var(--neon-red);
+      box-shadow: 0 0 10px var(--neon-red);
+    }
+
+    @keyframes pulse-beacon {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    /* SIRENA ACTIVA STROBE */
+    .siren-banner {
+      background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+      color: #ffffff;
+      padding: 1.1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
+      border-bottom: 2px solid #ffffff;
+      animation: alert-flash 1s infinite alternate;
+      z-index: 99;
+    }
+
+    @keyframes alert-flash {
+      0% { filter: brightness(1); }
+      100% { filter: brightness(1.2); }
+    }
+
+    .siren-banner-text {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-silenciar {
+      background: #ffffff;
+      color: #dc2626;
+      border: none;
+      padding: 0.6rem 1.6rem;
+      border-radius: 9999px;
+      font-weight: 900;
+      cursor: pointer;
+      font-size: 0.95rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s;
+    }
+
+    .btn-silenciar:hover {
+      background: #fee2e2;
+      transform: scale(1.04);
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    .main-content {
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* DECK DE CONTROL DEL RECEPTOR */
+    .control-deck {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-bright);
+      backdrop-filter: blur(20px);
+      padding: 1.25rem 2rem;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .profile-segmented {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .profile-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .select-profile-modern {
+      background: rgba(8, 12, 22, 0.9);
+      border: 1px solid var(--border-bright);
+      color: #ffffff;
+      padding: 0.65rem 1.4rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .select-profile-modern:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .action-controls {
+      display: flex;
+      gap: 0.85rem;
+      align-items: center;
+    }
+
+    .btn-control-glass {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      color: #cbd5e1;
+      padding: 0.65rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-control-glass:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-bright);
+      color: #ffffff;
+    }
+
+    .btn-sound-live {
+      padding: 0.65rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .btn-sound-live.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-sound-live.muted {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    /* SECCIÓN DE ALERTAS ACTIVAS */
+    .section-header-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .hud-title {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      letter-spacing: -0.3px;
+    }
+
+    .alert-counter-badge {
+      background: #ef4444;
+      color: #ffffff;
+      padding: 0.2rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 900;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+    }
+
+    .alerts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    /* TARJETA DE ALERTA HUD */
+    .alert-card-hud {
+      background: linear-gradient(160deg, rgba(35, 15, 22, 0.85) 0%, rgba(18, 10, 16, 0.95) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-left: 6px solid #ff3355;
+      border-radius: 20px;
+      padding: 1.75rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 35px rgba(255, 51, 85, 0.25);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.25rem;
+      position: relative;
+      animation: alert-card-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes alert-card-enter {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .alert-card-hud.estado-atendiendo {
+      background: linear-gradient(160deg, rgba(10, 26, 44, 0.85) 0%, rgba(6, 16, 28, 0.95) 100%);
+      border-color: rgba(6, 182, 212, 0.4);
+      border-left-color: #06b6d4;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 35px rgba(6, 182, 212, 0.25);
+    }
+
+    .alert-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .alert-room-name {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .alert-room-loc {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 0.35rem;
+    }
+
+    .badge-category-chip {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #ff4d6d;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .alert-elapsed-timer {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f87171;
+      margin: 0.75rem 0;
+    }
+
+    .alert-card-hud.estado-atendiendo .alert-elapsed-timer {
+      color: #38bdf8;
+    }
+
+    .badge-attending-user {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      color: #38bdf8;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .alert-cta-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-hud-respond {
+      flex: 1;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: none;
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-hud-respond:hover {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+    }
+
+    .btn-hud-resolve {
+      flex: 1;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: none;
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-hud-resolve:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+    }
+
+    /* ESTADO NORMAL / RADAR PACÍFICO */
+    .radar-standby-panel {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 4.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      margin-bottom: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .radar-scan-icon {
+      font-size: 4rem;
+      color: #10b981;
+      margin-bottom: 1.25rem;
+      display: inline-block;
+      filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.5));
+      animation: radar-float 3s ease-in-out infinite;
+    }
+
+    @keyframes radar-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .radar-standby-panel h3 {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+
+    .radar-standby-panel p {
+      color: #94a3b8;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    /* SECCIÓN DE HISTORIAL */
+    .history-card-deck {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 1.75rem 2rem;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+
+    .history-table-container {
+      overflow-x: auto;
+      margin-top: 1.25rem;
+    }
+
+    .history-table-modern {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
+      text-align: left;
+    }
+
+    .history-table-modern th {
+      padding: 0.85rem 1.25rem;
+      color: #64748b;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .history-table-modern td {
+      padding: 1.1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.025);
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      border-top: 1px solid var(--border-glass);
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .history-table-modern tr td:first-child {
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+      border-left: 1px solid var(--border-glass);
+    }
+
+    .history-table-modern tr td:last-child {
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+      border-right: 1px solid var(--border-glass);
+    }
+
+    .history-table-modern tr:hover td {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    /* MODAL DE ATENCIÓN */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 15, 0.85);
+      backdrop-filter: blur(16px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 1.5rem;
+    }
+
+    .modal-card {
+      background: linear-gradient(160deg, #131b2e 0%, #0d1322 100%);
+      border: 1px solid var(--border-bright);
+      border-radius: 24px;
+      max-width: 500px;
+      width: 100%;
+      padding: 2.5rem;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-card h2 {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+    }
+
+    .modal-card p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 1.75rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.9rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-bright);
+      background: rgba(7, 10, 18, 0.9);
+      color: #ffffff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.85rem;
+      margin-top: 2rem;
+    }
+  </style>
 </head>
 <body>
 
@@ -14,15 +626,20 @@
   <header class="app-header">
     <div class="brand">
       <span class="brand-icon">🚨</span>
-      <span>Central de Monitoreo y Alertas del Colegio</span>
+      <span>Central de Seguridad Escolar</span>
     </div>
+    
+    <div class="header-center-info">
+      <div class="clock-display" id="clockDisplay">--:--:--</div>
+    </div>
+
     <div class="status-badge" id="conexionBadge">
       <div class="status-dot disconnected" id="statusDot"></div>
       <span id="statusTexto">Conectando...</span>
     </div>
   </header>
 
-  <!-- Barra de Sirena Activa (se muestra cuando hay una alerta pendiente) -->
+  <!-- Barra de Sirena Activa -->
   <div id="bannerSirena" class="siren-banner" style="display: none;">
     <div class="siren-banner-text">
       <span>🔔</span>
@@ -33,66 +650,66 @@
 
   <main class="main-content">
     
-    <!-- Barra Superior de Control del Receptor -->
-    <div class="receptor-topbar">
-      <!-- Selector de Rol del Equipo -->
-      <div class="receptor-role-select">
-        <label for="selectRol">Perfil de este Computador:</label>
-        <select id="selectRol" class="select-control" onchange="cambiarRolReceptor()">
+    <!-- DECK DE CONTROL DEL RECEPTOR -->
+    <div class="control-deck">
+      <div class="profile-segmented">
+        <span class="profile-label">Perfil de Estación:</span>
+        <select id="selectRol" class="select-profile-modern" onchange="cambiarRolReceptor()">
           <option value="todos">🏢 Inspectoría General (Recibe TODAS)</option>
-          <option value="enfermeria">🩺 Enfermería (Médicas y Pánico)</option>
-          <option value="convivencia">🤝 Convivencia Escolar (Contención y Pánico)</option>
+          <option value="enfermeria">🩺 Enfermería (Médicas y Auxilio)</option>
+          <option value="convivencia">🤝 Convivencia Escolar (Contención y Auxilio)</option>
           <option value="patio">🛡️ Inspector de Patio</option>
         </select>
       </div>
 
-      <!-- Controles de Sonido y Notificaciones de Windows -->
-      <div class="receptor-controls">
-        <button id="btnNotificaciones" class="btn-secondary" onclick="solicitarPermisoNotificaciones()">
-          🔔 Notificaciones de Windows
+      <div class="action-controls">
+        <button id="btnNotificaciones" class="btn-control-glass" onclick="solicitarPermisoNotificaciones()">
+          <span>🔔</span> Notificaciones Windows
         </button>
 
-        <button id="btnSonidoToggle" class="btn-sound-toggle sound-active" onclick="toggleSonidoReceptor()">
-          🔊 Sonido Activo
+        <button id="btnSonidoToggle" class="btn-sound-live active" onclick="toggleSonidoReceptor()">
+          <span>🔊</span> Sonido Activo
         </button>
 
-        <button class="btn-secondary" onclick="probarSirenaSimulacro()">
-          ⚠️ Probar Sirena
+        <button class="btn-control-glass" onclick="probarSirenaSimulacro()">
+          <span>⚠️</span> Probar Sirena
         </button>
       </div>
     </div>
 
-    <!-- SECCIÓN: ALERTAS ACTIVAS -->
-    <section class="active-alerts-section">
-      <h2 class="section-title">
-        <span>🚨</span> Alertas Activas en Tiempo Real
-        <span id="contadorAlertas" class="status-badge" style="background: var(--danger); color: white;">0</span>
-      </h2>
-
-      <!-- Grilla de Alertas -->
-      <div id="gridAlertasActivas" class="alerts-grid">
-        <!-- Renderizado dinámicamente -->
+    <!-- SECCIÓN DE ALERTAS ACTIVAS -->
+    <section>
+      <div class="section-header-hud">
+        <h2 class="hud-title">
+          <span>🚨</span> Alertas Activas en Tiempo Real
+          <span id="contadorAlertas" class="alert-counter-badge">0</span>
+        </h2>
       </div>
 
-      <!-- Estado Vacío cuando no hay emergencias -->
-      <div id="emptyState" class="empty-state">
-        <div class="empty-state-icon">✅</div>
-        <h3>Sin alertas activas</h3>
-        <p>Todas las salas se encuentran en normalidad. Esta pantalla emitirá una alarma sonora inmediata ante cualquier llamada de auxilio.</p>
+      <!-- Grilla de Alertas en Vivo -->
+      <div id="gridAlertasActivas" class="alerts-grid">
+        <!-- Generado dinámicamente -->
+      </div>
+
+      <!-- Estado Normal / Radar -->
+      <div id="emptyState" class="radar-standby-panel">
+        <div class="radar-scan-icon">🛡️</div>
+        <h3>Sistema Vigilante • Sin Alertas Activas</h3>
+        <p>Todas las salas se encuentran en normalidad. Esta consola emitirá una alarma sonora y visual inmediata ante cualquier llamado de auxilio.</p>
       </div>
     </section>
 
-    <!-- SECCIÓN: HISTORIAL RECIENTE -->
-    <section class="history-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 class="section-title" style="margin-bottom: 0;">
+    <!-- SECCIÓN DE HISTORIAL -->
+    <section class="history-card-deck">
+      <div class="section-header-hud">
+        <h2 class="hud-title" style="font-size: 1.25rem;">
           <span>📋</span> Registro de Alertas del Día
         </h2>
-        <button class="btn-secondary" onclick="cargarHistorial()">🔄 Actualizar Historial</button>
+        <button class="btn-control-glass" onclick="cargarHistorial()">🔄 Actualizar</button>
       </div>
 
       <div class="history-table-container">
-        <table class="history-table">
+        <table class="history-table-modern">
           <thead>
             <tr>
               <th>Hora</th>
@@ -106,7 +723,7 @@
           </thead>
           <tbody id="tbodyHistorial">
             <tr>
-              <td colspan="7" style="text-align: center; color: var(--gray-600); padding: 2rem;">Cargando registro...</td>
+              <td colspan="7" style="text-align: center; color: #64748b; padding: 2rem;">Cargando registro...</td>
             </tr>
           </tbody>
         </table>
@@ -121,14 +738,14 @@
       <h2>🏃 Ir a Atender la Sala</h2>
       <p>Indica tu nombre para que los demás inspectores y la sala sepan quién va en camino.</p>
 
-      <div class="form-group">
-        <label for="txtNombreResponsable">Tu Nombre / Cargo:</label>
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label for="txtNombreResponsable" style="display: block; font-weight: 700; margin-bottom: 0.5rem; font-size: 0.85rem; color: #94a3b8; text-transform: uppercase;">Tu Nombre / Cargo:</label>
         <input type="text" id="txtNombreResponsable" class="form-control" placeholder="Ej: Inspector Juan Pérez / Enf. Carmen">
       </div>
 
       <div class="modal-actions">
-        <button class="btn-secondary" onclick="cerrarModalIdentificacion()">Cancelar</button>
-        <button class="btn-primary" onclick="confirmarAtencionAlerta()">Confirmar y Salir a la Sala</button>
+        <button class="btn-control-glass" onclick="cerrarModalIdentificacion()">Cancelar</button>
+        <button class="btn-hud-respond" style="padding: 0.75rem 1.5rem;" onclick="confirmarAtencionAlerta()">Confirmar y Salir a la Sala</button>
       </div>
     </div>
   </div>
@@ -142,23 +759,26 @@
     let idAlertaParaAtender = null;
     let intervaloTimers = null;
 
+    // Reloj digital en vivo
+    setInterval(() => {
+      const ahora = new Date();
+      const el = document.getElementById('clockDisplay');
+      if (el) {
+        el.textContent = ahora.toLocaleTimeString('es-CL');
+      }
+    }, 1000);
+
     window.addEventListener('DOMContentLoaded', () => {
-      // Configurar selector de rol guardado
       document.getElementById('selectRol').value = rolActual;
       if (nombreUsuario) {
         document.getElementById('txtNombreResponsable').value = nombreUsuario;
       }
 
-      // Conectar WebSocket
       conectarWebSocket();
-
-      // Cargar historial inicial
       cargarHistorial();
 
-      // Iniciar temporizador de actualización de segundos transcurridos
       intervaloTimers = setInterval(actualizarTiemposTranscurridos, 1000);
 
-      // Desbloquear audio con el primer clic del usuario
       document.body.addEventListener('click', () => {
         if (window.sistemaAudio) {
           window.sistemaAudio.iniciar();
@@ -178,14 +798,12 @@
           actualizarEstadoConexion(false);
         });
 
-        // Estado inicial de alertas
         socket.on('estado_inicial', (data) => {
           alertasActivas = data.alertasActivas || [];
           renderizarAlertas();
           evaluarSirena();
         });
 
-        // Nueva alerta entrante
         socket.on('alerta_emitida', (nuevaAlerta) => {
           alertasActivas.push(nuevaAlerta);
           renderizarAlertas();
@@ -194,7 +812,6 @@
           cargarHistorial();
         });
 
-        // Alerta actualizada (alguien tomó la alerta)
         socket.on('alerta_actualizada', (alerta) => {
           const index = alertasActivas.findIndex(a => a.id === alerta.id);
           if (index !== -1) {
@@ -205,7 +822,6 @@
           cargarHistorial();
         });
 
-        // Alerta resuelta
         socket.on('alerta_resuelta', (alerta) => {
           alertasActivas = alertasActivas.filter(a => a.id !== alerta.id);
           renderizarAlertas();
@@ -213,7 +829,6 @@
           cargarHistorial();
         });
 
-        // Alerta cancelada
         socket.on('alerta_cancelada', (alerta) => {
           alertasActivas = alertasActivas.filter(a => a.id !== alerta.id);
           renderizarAlertas();
@@ -221,8 +836,7 @@
           cargarHistorial();
         });
 
-        // Prueba de sirena
-        socket.on('prueba_sirena', (datos) => {
+        socket.on('prueba_sirena', () => {
           if (window.sistemaAudio) {
             window.sistemaAudio.reproducirSirenaInspectoria();
             setTimeout(() => window.sistemaAudio.detenerSirena(), 3000);
@@ -254,7 +868,6 @@
       evaluarSirena();
     }
 
-    // Filtrar alertas según el rol asignado a este PC
     function correspondeARol(alerta) {
       if (rolActual === 'todos') return true;
       if (alerta.tipo === 'general') return true;
@@ -264,7 +877,6 @@
       return false;
     }
 
-    // Renderizar tarjetas de alerta en pantalla
     function renderizarAlertas() {
       const contenedor = document.getElementById('gridAlertasActivas');
       const emptyState = document.getElementById('emptyState');
@@ -285,48 +897,39 @@
       alertasFiltradas.forEach(alerta => {
         const card = document.createElement('div');
         const esAtendiendo = alerta.estado === 'atendiendo';
-        card.className = `alert-card tipo-${alerta.tipo} ${esAtendiendo ? 'estado-atendiendo' : ''}`;
-
-        // Badge y textos
-        let badgeClass = 'badge-inspectoria';
-        let badgeTexto = 'INSPECTORÍA';
-        if (alerta.tipo === 'enfermeria') { badgeClass = 'badge-enfermeria'; badgeTexto = 'ENFERMERÍA'; }
-        if (alerta.tipo === 'convivencia') { badgeClass = 'badge-convivencia'; badgeTexto = 'CONVIVENCIA'; }
-        if (alerta.tipo === 'general') { badgeClass = 'badge-general'; badgeTexto = 'PÁNICO GENERAL'; }
+        card.className = `alert-card-hud ${esAtendiendo ? 'estado-atendiendo' : ''}`;
 
         const segundos = Math.floor((Date.now() - new Date(alerta.fechaHora).getTime()) / 1000);
         const tiempoTexto = formatearTiempoTranscurrido(segundos);
 
         card.innerHTML = `
           <div>
-            <div class="alert-header">
+            <div class="alert-card-top">
               <div>
-                <div class="alert-sala">${alerta.sala}</div>
-                <div class="alert-pabellon">${alerta.pabellon || 'Ubicación identificada'}</div>
+                <div class="alert-room-name">${alerta.sala}</div>
+                <div class="alert-room-loc">📍 ${alerta.pabellon || 'Ubicación identificada'}</div>
               </div>
-              <span class="alert-badge ${badgeClass}">${badgeTexto}</span>
+              <span class="badge-category-chip">🚨 AUXILIO</span>
             </div>
 
-            <div style="margin: 0.75rem 0;">
-              <div class="alert-timer" id="timer_${alerta.id}" data-timestamp="${alerta.fechaHora}">
-                ⏱️ Hace ${tiempoTexto} (${alerta.horaLegible})
-              </div>
+            <div class="alert-elapsed-timer" id="timer_${alerta.id}" data-timestamp="${alerta.fechaHora}">
+              ⏱️ Hace ${tiempoTexto} (${alerta.horaLegible})
             </div>
 
             ${esAtendiendo ? `
-              <div class="alert-atendido-por">
-                🏃 Atendido por: <strong>${alerta.atendidoPor}</strong> (${alerta.horaAtencion})
+              <div class="badge-attending-user">
+                🏃 Atendiendo: <strong>${alerta.atendidoPor}</strong> (${alerta.horaAtencion})
               </div>
             ` : ''}
           </div>
 
-          <div class="alert-actions">
+          <div class="alert-cta-group">
             ${!esAtendiendo ? `
-              <button class="btn-atender" onclick="abrirModalAtencion('${alerta.id}')">
+              <button class="btn-hud-respond" onclick="abrirModalAtencion('${alerta.id}')">
                 🏃 Voy en Camino
               </button>
             ` : `
-              <button class="btn-resolver" onclick="marcarResuelta('${alerta.id}')">
+              <button class="btn-hud-resolve" onclick="marcarResuelta('${alerta.id}')">
                 ✅ Marcar Resuelta
               </button>
             `}
@@ -354,11 +957,7 @@
       });
     }
 
-    // ======================================================
-    // LÓGICA DE SIRENA Y AUDIO
-    // ======================================================
     function evaluarSirena() {
-      // Hay alertas pendientes para nuestro rol que NADIE ha tomado todavía?
       const pendientes = alertasActivas.filter(a => correspondeARol(a) && a.estado === 'pendiente');
       const bannerSirena = document.getElementById('bannerSirena');
       const sirenTexto = document.getElementById('sirenTexto');
@@ -366,7 +965,7 @@
       if (pendientes.length > 0) {
         bannerSirena.style.display = 'flex';
         const primera = pendientes[0];
-        sirenTexto.textContent = `¡ALERTA SIN ATENDER EN ${primera.sala.toUpperCase()}! (${primera.tipo.toUpperCase()})`;
+        sirenTexto.textContent = `¡ALERTA SIN ATENDER EN ${primera.sala.toUpperCase()}!`;
 
         if (window.sistemaAudio && !window.sistemaAudio.sonando) {
           window.sistemaAudio.reproducirSegunTipo(primera.tipo);
@@ -391,11 +990,11 @@
       if (window.sistemaAudio) {
         const silenciado = window.sistemaAudio.toggleSilencio();
         if (silenciado) {
-          btn.className = 'btn-sound-toggle sound-muted';
-          btn.textContent = '🔇 Sonido Silenciado';
+          btn.className = 'btn-sound-live muted';
+          btn.innerHTML = '<span>🔇</span> Sonido Silenciado';
         } else {
-          btn.className = 'btn-sound-toggle sound-active';
-          btn.textContent = '🔊 Sonido Activo';
+          btn.className = 'btn-sound-live active';
+          btn.innerHTML = '<span>🔊</span> Sonido Activo';
           evaluarSirena();
         }
       }
@@ -408,9 +1007,6 @@
       }
     }
 
-    // ======================================================
-    // NOTIFICACIONES NATIVAS DE WINDOWS
-    // ======================================================
     function solicitarPermisoNotificaciones() {
       if (!('Notification' in window)) {
         alert('Este navegador no soporta notificaciones de escritorio.');
@@ -418,11 +1014,11 @@
       }
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          new Notification('🚨 Sistema de Alertas Escolar', {
+          new Notification('🚨 Central de Seguridad Escolar', {
             body: 'Notificaciones activadas. Recibirás avisos aun con la ventana minimizada.',
             icon: '🏫'
           });
-          document.getElementById('btnNotificaciones').textContent = '🔔 Notificaciones Activas';
+          document.getElementById('btnNotificaciones').innerHTML = '<span>🔔</span> Notificaciones Activas';
         }
       });
     }
@@ -431,7 +1027,7 @@
       if (!correspondeARol(alerta)) return;
       if ('Notification' in window && Notification.permission === 'granted') {
         const notif = new Notification(`🚨 ¡EMERGENCIA EN ${alerta.sala.toUpperCase()}!`, {
-          body: `Tipo: ${alerta.tipo.toUpperCase()} - Hora: ${alerta.horaLegible}. Pulsa para ver detalles.`,
+          body: `Llamado de auxilio recibido a las ${alerta.horaLegible}. Pulsa para ver detalles.`,
           requireInteraction: true
         });
         notif.onclick = () => {
@@ -440,14 +1036,10 @@
       }
     }
 
-    // ======================================================
-    // ATENCIÓN Y RESOLUCIÓN DE ALERTAS
-    // ======================================================
     function abrirModalAtencion(idAlerta) {
       idAlertaParaAtender = idAlerta;
       const guardado = localStorage.getItem('colegio_receptor_nombre');
       if (guardado) {
-        // Si ya guardó su nombre antes, tomar de una vez para máxima rapidez
         ejecutarAtencion(guardado);
       } else {
         document.getElementById('modalIdentificacion').style.display = 'flex';
@@ -496,9 +1088,6 @@
       }
     }
 
-    // ======================================================
-    // CARGAR HISTORIAL RECIENTE
-    // ======================================================
     async function cargarHistorial() {
       try {
         const res = await fetch('/api/historial');
@@ -512,27 +1101,26 @@
     function renderizarHistorial() {
       const tbody = document.getElementById('tbodyHistorial');
       if (historial.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--gray-600); padding: 1.5rem;">No hay registros previos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 2rem;">No hay registros previos de alertas hoy.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = '';
-      // Mostrar del más reciente al más antiguo
       const ordenado = [...historial].reverse();
 
       ordenado.forEach(item => {
         const tr = document.createElement('tr');
-        let estadoBadge = `<span class="status-badge" style="background:#fee2e2; color:#dc2626;">Pendiente</span>`;
-        if (item.estado === 'atendiendo') estadoBadge = `<span class="status-badge" style="background:#e0f2fe; color:#0369a1;">En atención</span>`;
-        if (item.estado === 'resuelta') estadoBadge = `<span class="status-badge" style="background:#dcfce7; color:#15803d;">Resuelta</span>`;
-        if (item.estado === 'cancelada') estadoBadge = `<span class="status-badge" style="background:#f1f5f9; color:#475569;">Falsa alarma</span>`;
+        let estadoBadge = `<span style="background:rgba(239, 68, 68, 0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.75rem; font-weight:800;">Pendiente</span>`;
+        if (item.estado === 'atendiendo') estadoBadge = `<span style="background:rgba(6,182,212,0.2); color:#38bdf8; border:1px solid rgba(6,182,212,0.4); padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.75rem; font-weight:800;">En atención</span>`;
+        if (item.estado === 'resuelta') estadoBadge = `<span style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.75rem; font-weight:800;">Resuelta</span>`;
+        if (item.estado === 'cancelada') estadoBadge = `<span style="background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.75rem; font-weight:800;">Falsa alarma</span>`;
 
         tr.innerHTML = `
           <td><strong>${item.horaLegible}</strong></td>
-          <td><strong>${item.sala}</strong> <span style="font-size:0.8rem; color:#64748b;">(${item.pabellon || '-'})</span></td>
-          <td><span style="text-transform:uppercase; font-size:0.8rem; font-weight:700;">${item.tipo}</span></td>
+          <td><strong style="color:#ffffff;">${item.sala}</strong> <span style="font-size:0.8rem; color:#64748b;">(${item.pabellon || '-'})</span></td>
+          <td><span style="font-size:0.8rem; font-weight:800; color:#cbd5e1;">AUXILIO</span></td>
           <td>${estadoBadge}</td>
-          <td>${item.atendidoPor || '-'}</td>
+          <td><strong>${item.atendidoPor || '-'}</strong></td>
           <td>${item.horaAtencion || '-'}</td>
           <td>${item.horaResolucion || '-'}</td>
         `;
