@@ -49,23 +49,18 @@
         <h2 style="font-size: 1.3rem; margin-bottom: 0.25rem; color: var(--dark);">💻 Sala 204 (2° Piso)</h2>
         <p style="color: var(--gray-600); font-size: 0.85rem; margin-bottom: 1.5rem;">Computador fijo del profesor</p>
 
-        <div id="simBotonera" class="panic-grid" style="grid-template-columns: 1fr;">
-          <div class="panic-card card-inspectoria" onclick="simularAlerta('inspectoria', 'Inspectoría General')">
-            <div class="panic-icon" style="font-size: 2.5rem;">🚨</div>
-            <div class="panic-title">SOLICITAR INSPECTORÍA</div>
-            <div class="panic-desc">Pelea, desorden grave o riesgo inminente.</div>
-          </div>
-
-          <div class="panic-card card-enfermeria" onclick="simularAlerta('enfermeria', 'Enfermería')">
-            <div class="panic-icon" style="font-size: 2.5rem;">🩺</div>
-            <div class="panic-title">EMERGENCIA MÉDICA</div>
-            <div class="panic-desc">Accidente, desmayo o lesión de estudiante.</div>
-          </div>
-
-          <div class="panic-card card-convivencia" onclick="simularAlerta('convivencia', 'Convivencia Escolar')">
-            <div class="panic-icon" style="font-size: 2.5rem;">🤝</div>
-            <div class="panic-title">CONVIVENCIA ESCOLAR</div>
-            <div class="panic-desc">Desregulación emocional o contención urgente.</div>
+        <div id="simBotonera">
+          <div class="single-panic-card" onclick="simularAlerta('general', 'Asistencia Urgente en Sala')" style="padding: 2rem 1.5rem; max-width: 100%;">
+            <div class="single-panic-circle" style="width: 120px; height: 120px; margin-bottom: 1rem;">
+              <span style="font-size: 3.8rem;">🚨</span>
+            </div>
+            <div class="single-panic-title" style="font-size: 1.6rem;">SOLICITAR ASISTENCIA</div>
+            <div class="single-panic-desc" style="font-size: 0.95rem; margin-bottom: 1.25rem;">
+              Presionar ante cualquier situación de emergencia o incidente en el aula.
+            </div>
+            <div class="single-panic-action" style="font-size: 1rem; padding: 0.75rem 1.75rem;">
+              🚨 PULSAR PARA PEDIR AUXILIO
+            </div>
           </div>
         </div>
 

@@ -34,42 +34,21 @@
         </div>
       </div>
 
-      <!-- ESTADO 1: Botonera Normal -->
+      <!-- ESTADO 1: Botonera con Botón Único de Auxilio -->
       <div id="panelBotonera">
-        <div class="panic-grid">
-
-          <!-- 1. INSPECTORÍA -->
-          <div class="panic-card card-inspectoria" onclick="activarAlerta('inspectoria', '🚨 Solicitud de Inspectoría General')">
-            <div class="panic-icon">🚨</div>
-            <div class="panic-title">INSPECTORÍA</div>
-            <div class="panic-desc">Pelea, desorden grave, intruso o riesgo a la seguridad del aula.</div>
-            <div class="panic-hint">Pulsar para llamar</div>
+        <div class="single-panic-container">
+          <div class="single-panic-card" onclick="activarAlerta('general', '🚨 Solicitud de Asistencia Urgente en Sala')">
+            <div class="single-panic-circle">
+              <span>🚨</span>
+            </div>
+            <div class="single-panic-title">SOLICITAR ASISTENCIA</div>
+            <div class="single-panic-desc">
+              Presiona aquí ante cualquier situación de emergencia, desorden, incidente de salud o necesidad de apoyo urgente en el aula.
+            </div>
+            <div class="single-panic-action">
+              🚨 PULSAR PARA PEDIR AUXILIO
+            </div>
           </div>
-
-          <!-- 2. ENFERMERÍA -->
-          <div class="panic-card card-enfermeria" onclick="activarAlerta('enfermeria', '🩺 Emergencia Médica / Enfermería')">
-            <div class="panic-icon">🩺</div>
-            <div class="panic-title">ENFERMERÍA</div>
-            <div class="panic-desc">Accidente, desmayo, convulsión, estudiante lesionado o vómitos.</div>
-            <div class="panic-hint">Pulsar para llamar</div>
-          </div>
-
-          <!-- 3. CONVIVENCIA ESCOLAR -->
-          <div class="panic-card card-convivencia" onclick="activarAlerta('convivencia', '🤝 Solicitud de Convivencia Escolar')">
-            <div class="panic-icon">🤝</div>
-            <div class="panic-title">CONVIVENCIA</div>
-            <div class="panic-desc">Desregulación emocional severa, crisis, contención o mediación.</div>
-            <div class="panic-hint">Pulsar para llamar</div>
-          </div>
-
-          <!-- 4. PÁNICO GENERAL -->
-          <div class="panic-card card-general" onclick="activarAlerta('general', '🆘 ALERTA MÁXIMA DE PÁNICO')">
-            <div class="panic-icon">🆘</div>
-            <div class="panic-title">BOTÓN DE PÁNICO INMEDIATO</div>
-            <div class="panic-desc">Activa alerta general máxima en todos los computadores del colegio al mismo tiempo.</div>
-            <div class="panic-hint">Pulsar en situación extrema</div>
-          </div>
-
         </div>
       </div>
 
@@ -431,8 +410,8 @@
         detalles.textContent = 'Se ha notificado al equipo de CONVIVENCIA ESCOLAR e Inspectoría.';
       } else {
         icono.textContent = '🚨';
-        titulo.textContent = '¡ALERTA DE INSPECTORÍA ENVIADA!';
-        detalles.textContent = 'Se ha notificado de inmediato a INSPECTORÍA GENERAL.';
+        titulo.textContent = '¡ALERTA DE AUXILIO ENVIADA!';
+        detalles.textContent = 'Se ha notificado de inmediato a Inspectoría General. La sirena está sonando.';
       }
     }
 
