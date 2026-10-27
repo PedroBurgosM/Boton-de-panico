@@ -63,30 +63,34 @@
         </form>
       </section>
 
-      <!-- Panel: Enlaces para los Receptores (Inspectoría, Enfermería, Convivencia) -->
+      <!-- Panel: Enlace Universal para los Computadores de Destino -->
       <section style="background: var(--bg-surface); border: 1px solid var(--border-glass-bright); border-radius: var(--radius-lg); padding: 1.75rem 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4); backdrop-filter: blur(20px); border-top: 4px solid var(--neon-cyan);">
-        <h2 class="section-title"><span>🏢</span> Enlaces para los Computadores de Destino</h2>
+        <h2 class="section-title"><span>🏢</span> Enlace Universal para Computadores de Destino</h2>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
-          Copia estos enlaces para dejarlos fijados o en el escritorio de los equipos receptores:
+          Este es el <strong>único enlace</strong> que deben abrir todos los computadores receptores (Inspectoría General, Enfermería, Convivencia Escolar, Dirección, etc.). Todos recibirán las mismas alertas con sonido de sirena en tiempo real:
         </p>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
-          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); padding: 1.25rem; border-radius: var(--radius-md);">
-            <div style="font-weight: 800; color: #ffffff; margin-bottom: 0.25rem; font-size: 1.1rem;">🏢 Inspectoría General</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Recibe absolutamente todas las alertas.</div>
-            <button class="btn-secondary" onclick="copiarTexto(generarUrlReceptor('todos'))" style="width: 100%;">📋 Copiar Enlace</button>
-          </div>
-
-          <div style="background: rgba(225, 29, 72, 0.05); border: 1px solid rgba(225, 29, 72, 0.25); padding: 1.25rem; border-radius: var(--radius-md);">
-            <div style="font-weight: 800; color: #fb7185; margin-bottom: 0.25rem; font-size: 1.1rem;">🩺 Enfermería</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Recibe llamados médicos y pánico general.</div>
-            <button class="btn-secondary" onclick="copiarTexto(generarUrlReceptor('enfermeria'))" style="width: 100%;">📋 Copiar Enlace</button>
-          </div>
-
-          <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.25); padding: 1.25rem; border-radius: var(--radius-md);">
-            <div style="font-weight: 800; color: #c084fc; margin-bottom: 0.25rem; font-size: 1.1rem;">🤝 Convivencia Escolar</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Recibe contención, mediación y pánico.</div>
-            <button class="btn-secondary" onclick="copiarTexto(generarUrlReceptor('convivencia'))" style="width: 100%;">📋 Copiar Enlace</button>
+        <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1.5rem 1.75rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="font-weight: 800; color: #ffffff; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🛡️</span> Consola Central Receptora (Todos los Equipos)
+              </div>
+              <div style="font-size: 0.95rem; color: #38bdf8; margin-top: 0.35rem; font-family: monospace;" id="lblUrlReceptorDisplay">
+                Cargando enlace...
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+              <button class="btn-primary" onclick="copiarTexto(generarUrlReceptorUniversal())" style="font-size: 0.9rem; padding: 0.65rem 1.25rem;">
+                📋 Copiar Enlace
+              </button>
+              <button class="btn-secondary" onclick="copiarTexto(generarComandoReceptorUniversal())" style="font-size: 0.9rem; padding: 0.65rem 1.25rem;">
+                💻 Copiar Comando Acceso Directo
+              </button>
+              <a id="btnAbrirReceptor" href="#" target="_blank" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem; padding: 0.65rem 1.25rem; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);">
+                ↗ Abrir Consola
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -133,6 +137,7 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       await detectarHost();
+      actualizarEnlaceReceptorUI();
       await cargarSalas();
     });
 
@@ -262,8 +267,20 @@
       }
     }
 
-    function generarUrlReceptor(rol) {
-      return `${hostBase}/receptor.html?rol=${rol}`;
+    function generarUrlReceptorUniversal() {
+      return `${hostBase}/receptor`;
+    }
+
+    function generarComandoReceptorUniversal() {
+      return `chrome.exe --app="${hostBase}/receptor"`;
+    }
+
+    function actualizarEnlaceReceptorUI() {
+      const url = generarUrlReceptorUniversal();
+      const el = document.getElementById('lblUrlReceptorDisplay');
+      if (el) el.textContent = url;
+      const btn = document.getElementById('btnAbrirReceptor');
+      if (btn) btn.href = url;
     }
 
     function copiarTexto(texto) {

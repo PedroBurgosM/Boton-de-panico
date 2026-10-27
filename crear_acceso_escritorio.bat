@@ -37,25 +37,13 @@ goto crear
 
 :receptor
 echo.
-echo Ingresa la IP o dirección del servidor (Ejemplo: 192.168.1.50:3000 o localhost:3000):
+echo Ingresa la dirección del servidor (Ejemplo: boton-de-panico-i26c.onrender.com o localhost:3000):
 set /p servidor="Dirección del servidor: "
-echo.
-echo Selecciona el perfil del receptor:
-echo [1] Inspectoría General (Recibe todo)
-echo [2] Enfermería
-echo [3] Convivencia Escolar
-set /p rolopcion="Perfil (1, 2 o 3): "
 
-if "%rolopcion%"=="1" (
-    set "TARGET_URL=http://%servidor%/receptor.html?rol=todos"
-    set "LNK_NAME=🏢 Central de Alertas - Inspectoría.lnk"
-) else if "%rolopcion%"=="2" (
-    set "TARGET_URL=http://%servidor%/receptor.html?rol=enfermeria"
-    set "LNK_NAME=🩺 Central de Alertas - Enfermería.lnk"
-) else (
-    set "TARGET_URL=http://%servidor%/receptor.html?rol=convivencia"
-    set "LNK_NAME=🤝 Central de Alertas - Convivencia.lnk"
-)
+set "TARGET_URL=https://%servidor%/receptor"
+if "%servidor:localhost=%" neq "%servidor%" set "TARGET_URL=http://%servidor%/receptor"
+if "%servidor:192.168=%" neq "%servidor%" set "TARGET_URL=http://%servidor%/receptor"
+set "LNK_NAME=🛡️ Central de Alertas - Receptor.lnk"
 goto crear
 
 :crear
