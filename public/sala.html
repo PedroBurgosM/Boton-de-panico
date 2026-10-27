@@ -419,6 +419,120 @@
       border-color: #ef4444;
       color: #ffffff;
     }
+
+    /* ====================================================== */
+    /* RESPONSIVE DESIGN MULTIDISPOSITIVO (MÓVIL, TABLET, PC) */
+    /* ====================================================== */
+    @media (max-width: 640px) {
+      .app-header {
+        padding: 0.65rem 1rem !important;
+      }
+      .brand {
+        font-size: 0.95rem !important;
+      }
+      .status-badge {
+        font-size: 0.68rem !important;
+        padding: 0.3rem 0.65rem !important;
+      }
+      .main-content {
+        padding: 1rem 0.75rem !important;
+      }
+      .hud-room-card {
+        padding: 1rem 1.25rem !important;
+        border-radius: 16px !important;
+      }
+      .hud-room-title {
+        font-size: clamp(1.4rem, 6vw, 1.85rem) !important;
+      }
+      .actuator-aura {
+        width: 250px !important;
+        height: 250px !important;
+      }
+      .actuator-bezel {
+        width: min(250px, 78vw) !important;
+        height: min(250px, 78vw) !important;
+        padding: 10px !important;
+      }
+      .actuator-hazard-ring {
+        padding: 8px !important;
+      }
+      .actuator-button {
+        width: min(190px, 60vw) !important;
+        height: min(190px, 60vw) !important;
+      }
+      .btn-alert-icon {
+        font-size: 2.8rem !important;
+      }
+      .btn-alert-text {
+        font-size: 1.15rem !important;
+      }
+      .btn-alert-sub {
+        font-size: 0.65rem !important;
+      }
+      .actuator-legend-badge {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 1rem !important;
+      }
+      .hud-active-panel {
+        padding: 2rem 1.25rem !important;
+        border-radius: 20px !important;
+      }
+      .hud-alert-icon {
+        font-size: 3.5rem !important;
+      }
+      .hud-alert-title {
+        font-size: 1.7rem !important;
+      }
+      .hud-alert-desc {
+        font-size: 0.95rem !important;
+        margin-bottom: 1.25rem !important;
+      }
+      .hud-atencion-pill {
+        font-size: 0.92rem !important;
+        padding: 0.85rem 1.15rem !important;
+        margin-bottom: 1.25rem !important;
+      }
+      .modal-card {
+        padding: 1.75rem 1.25rem !important;
+        border-radius: 18px !important;
+      }
+    }
+
+    @media (max-height: 680px) and (orientation: landscape) {
+      .main-content {
+        padding: 0.75rem !important;
+      }
+      .sala-container {
+        gap: 0.75rem !important;
+      }
+      .hud-room-card {
+        padding: 0.65rem 1.5rem !important;
+      }
+      .hud-room-title {
+        font-size: 1.4rem !important;
+      }
+      .actuator-stage {
+        margin: 0.5rem 0 !important;
+      }
+      .actuator-bezel {
+        width: 190px !important;
+        height: 190px !important;
+        padding: 8px !important;
+      }
+      .actuator-button {
+        width: 145px !important;
+        height: 145px !important;
+      }
+      .btn-alert-icon {
+        font-size: 2rem !important;
+      }
+      .btn-alert-text {
+        font-size: 0.9rem !important;
+      }
+      .btn-alert-sub {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>

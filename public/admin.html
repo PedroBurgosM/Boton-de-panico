@@ -4,7 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Administración de Salas y Accesos Directos</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=5.0">
+  <style>
+    @media (max-width: 640px) {
+      .app-header {
+        padding: 0.75rem 1rem !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+      }
+      .brand {
+        font-size: 0.95rem !important;
+      }
+      .main-content {
+        padding: 1.25rem 0.75rem !important;
+      }
+      #formNuevaSala {
+        grid-template-columns: 1fr !important;
+      }
+      .history-table th, .history-table td {
+        padding: 0.65rem 0.5rem !important;
+        font-size: 0.8rem !important;
+        white-space: nowrap !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
