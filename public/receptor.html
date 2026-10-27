@@ -663,6 +663,10 @@
       </div>
 
       <div class="action-controls">
+        <button id="btnOperador" class="btn-control-glass" onclick="abrirModalCambioNombre()" title="Haz clic para cambiar tu nombre o cargo registrado">
+          <span>👤</span> <span id="lblOperador">Operador: Configurar</span>
+        </button>
+
         <button id="btnNotificaciones" class="btn-control-glass" onclick="solicitarPermisoNotificaciones()">
           <span>🔔</span> Notificaciones Windows
         </button>
@@ -773,6 +777,7 @@
       if (nombreUsuario) {
         document.getElementById('txtNombreResponsable').value = nombreUsuario;
       }
+      actualizarBadgeOperador();
 
       conectarWebSocket();
       cargarHistorial();
@@ -1036,14 +1041,28 @@
       }
     }
 
+    function actualizarBadgeOperador() {
+      const nombre = localStorage.getItem('colegio_receptor_nombre') || '';
+      const lbl = document.getElementById('lblOperador');
+      if (lbl) {
+        lbl.textContent = nombre ? `Operador: ${nombre}` : 'Operador: Configurar';
+      }
+    }
+
+    function abrirModalCambioNombre() {
+      const actual = localStorage.getItem('colegio_receptor_nombre') || '';
+      document.getElementById('txtNombreResponsable').value = actual;
+      document.getElementById('modalIdentificacion').style.display = 'flex';
+      document.getElementById('txtNombreResponsable').focus();
+    }
+
     function abrirModalAtencion(idAlerta) {
       idAlertaParaAtender = idAlerta;
       const guardado = localStorage.getItem('colegio_receptor_nombre');
       if (guardado) {
         ejecutarAtencion(guardado);
       } else {
-        document.getElementById('modalIdentificacion').style.display = 'flex';
-        document.getElementById('txtNombreResponsable').focus();
+        abrirModalCambioNombre();
       }
     }
 
@@ -1059,8 +1078,11 @@
         return;
       }
       localStorage.setItem('colegio_receptor_nombre', nombre);
+      actualizarBadgeOperador();
       cerrarModalIdentificacion();
-      ejecutarAtencion(nombre);
+      if (idAlertaParaAtender) {
+        ejecutarAtencion(nombre);
+      }
     }
 
     function ejecutarAtencion(nombre) {
