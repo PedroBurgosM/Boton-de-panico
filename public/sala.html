@@ -4,17 +4,430 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Botón de Alerta - Sala de Clases</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=4.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/audio.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: #090d16 !important;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(30, 58, 138, 0.25) 0%, transparent 60%),
+        radial-gradient(circle at 50% 100%, rgba(225, 29, 72, 0.15) 0%, transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) !important;
+      background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
+      font-family: var(--font-body);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR MINIMALISTA TECH */
+    .app-header {
+      background: rgba(13, 18, 30, 0.75) !important;
+      backdrop-filter: blur(20px) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      padding: 0.85rem 2rem !important;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .brand-icon {
+      font-size: 1.4rem;
+      filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.6));
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.5; }
+    }
+
+    .main-content {
+      flex: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .sala-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    /* TARJETA HUD DE LA SALA */
+    .hud-room-card {
+      background: rgba(18, 24, 40, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      padding: 1.25rem 2.5rem;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .hud-room-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #60a5fa;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .hud-room-title {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.2rem;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-room-location {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    /* ====================================================== */
+    /* EL BOTÓN FÍSICO 3D DE PÁNICO (CENTRO DE CONTROL)       */
+    /* ====================================================== */
+    .actuator-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      margin: 1.5rem 0;
+    }
+
+    /* Aura exterior pulsante */
+    .actuator-aura {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 380px;
+      height: 380px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(225, 29, 72, 0.2) 0%, rgba(225, 29, 72, 0.05) 50%, transparent 75%);
+      pointer-events: none;
+      animation: aura-expand 3s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    @keyframes aura-expand {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    }
+
+    /* Carcasa Metálica Exterior (Bisel con Remaches de Seguridad) */
+    .actuator-bezel {
+      width: 310px;
+      height: 310px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2b354f 0%, #171f33 50%, #0d1220 100%);
+      padding: 16px;
+      box-shadow: 
+        0 25px 60px -10px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        inset 0 2px 4px rgba(255, 255, 255, 0.25),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.8);
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Anillo de Advertencia Rayado / LED */
+    .actuator-hazard-ring {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #101626 65%, #1e293b 100%);
+      border: 3px dashed rgba(239, 68, 68, 0.4);
+      padding: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
+      animation: spin-slow 60s linear infinite;
+    }
+
+    @keyframes spin-slow {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* EL BOTÓN ROJO TÁCTIL 3D */
+    .actuator-button {
+      width: 230px;
+      height: 230px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ff4b62 0%, #e11d48 40%, #991b1b 85%, #500717 100%);
+      border: none;
+      outline: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      box-shadow: 
+        0 18px 30px rgba(0, 0, 0, 0.7),
+        0 0 35px rgba(225, 29, 72, 0.5),
+        inset 0 4px 8px rgba(255, 255, 255, 0.5),
+        inset 0 -8px 16px rgba(0, 0, 0, 0.6);
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      animation: spin-slow-reverse 60s linear infinite;
+      position: relative;
+    }
+
+    @keyframes spin-slow-reverse {
+      100% { transform: rotate(-360deg); }
+    }
+
+    .actuator-button:hover {
+      transform: scale(1.03);
+      filter: brightness(1.1);
+      box-shadow: 
+        0 22px 40px rgba(0, 0, 0, 0.8),
+        0 0 50px rgba(255, 51, 85, 0.75),
+        inset 0 4px 8px rgba(255, 255, 255, 0.6),
+        inset 0 -8px 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .actuator-button:active {
+      transform: scale(0.94);
+      filter: brightness(0.9);
+      box-shadow: 
+        0 8px 15px rgba(0, 0, 0, 0.8),
+        0 0 25px rgba(225, 29, 72, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    .btn-alert-icon {
+      font-size: 3.5rem;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+      margin-bottom: 0.25rem;
+      transition: transform 0.2s;
+    }
+
+    .actuator-button:hover .btn-alert-icon {
+      transform: scale(1.1);
+    }
+
+    .btn-alert-text {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.1;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    }
+
+    .btn-alert-sub {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.85);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 0.35rem;
+    }
+
+    /* Rótulo Guía Debajo del Botón */
+    .actuator-legend {
+      margin-top: 1.75rem;
+      text-align: center;
+      max-width: 420px;
+    }
+
+    .actuator-legend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.6rem 1.4rem;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    /* ====================================================== */
+    /* PANTALLA ACTIVA (HUD ALERTA EN TIEMPO REAL)            */
+    /* ====================================================== */
+    .hud-active-panel {
+      width: 100%;
+      max-width: 640px;
+      background: linear-gradient(160deg, rgba(35, 12, 18, 0.85) 0%, rgba(16, 8, 12, 0.95) 100%);
+      border: 2px solid #ff3355;
+      border-radius: 28px;
+      padding: 3rem 2rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 50px rgba(255, 51, 85, 0.35);
+      backdrop-filter: blur(20px);
+      animation: alert-pulse-hud 1.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes alert-pulse-hud {
+      0% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 51, 85, 0.25); }
+      100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 70px rgba(255, 51, 85, 0.6); border-color: #ff5577; }
+    }
+
+    .hud-active-panel.estado-atendiendo {
+      background: linear-gradient(160deg, rgba(8, 28, 48, 0.85) 0%, rgba(5, 15, 30, 0.95) 100%);
+      border-color: #06b6d4;
+      animation: cyan-pulse-hud 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes cyan-pulse-hud {
+      0% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.25); }
+      100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 70px rgba(6, 182, 212, 0.6); }
+    }
+
+    .hud-alert-icon {
+      font-size: 5rem;
+      margin-bottom: 0.75rem;
+      display: inline-block;
+      animation: bounce-icon 0.8s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes bounce-icon {
+      from { transform: scale(1); }
+      to { transform: scale(1.15) translateY(-5px); }
+    }
+
+    .hud-alert-title {
+      font-family: var(--font-display);
+      font-size: 2.3rem;
+      font-weight: 900;
+      color: #ff4d6d;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 20px rgba(255, 77, 109, 0.6);
+    }
+
+    .hud-active-panel.estado-atendiendo .hud-alert-title {
+      color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    }
+
+    .hud-alert-desc {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 1.75rem;
+      line-height: 1.5;
+    }
+
+    .hud-atencion-pill {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.5);
+      border-radius: 14px;
+      padding: 1.1rem 1.75rem;
+      display: inline-block;
+      margin-bottom: 1.75rem;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #38bdf8;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+
+    .btn-hud-cancel {
+      background: rgba(255, 255, 255, 0.06);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 0.75rem 1.75rem;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-hud-cancel:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #ffffff;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Encabezado -->
+  <!-- Encabezado Tech -->
   <header class="app-header">
     <div class="brand">
-      <span class="brand-icon">🏫</span>
-      <span>Botón de Emergencia Escolar</span>
+      <span class="brand-icon">🚨</span>
+      <span>Central de Seguridad Escolar</span>
     </div>
     <div class="status-badge" id="conexionBadge">
       <div class="status-dot disconnected" id="statusDot"></div>
@@ -26,50 +439,67 @@
   <main class="main-content">
     <div class="sala-container">
 
-      <!-- Banner de la Sala Actual -->
-      <div class="sala-banner">
-        <div class="sala-info">
-          <h1 id="lblNombreSala">Cargando Sala...</h1>
-          <p id="lblPabellonSala">Identificando ubicación del equipo...</p>
+      <!-- TARJETA HUD DE LA SALA -->
+      <div class="hud-room-card">
+        <div class="hud-room-tag">
+          <span>●</span> SALA ASIGNADA
+        </div>
+        <div class="hud-room-title" id="lblNombreSala">
+          Cargando Sala...
+        </div>
+        <div class="hud-room-location">
+          <span>📍</span> <span id="lblPabellonSala">Identificando ubicación del equipo...</span>
         </div>
       </div>
 
-      <!-- ESTADO 1: Botonera con Botón Único de Auxilio -->
+      <!-- ESTADO 1: EL BOTÓN DE PÁNICO TÁCTIL 3D -->
       <div id="panelBotonera">
-        <div class="single-panic-container">
-          <div class="single-panic-card" onclick="activarAlerta('general', '🚨 Solicitud de Asistencia Urgente en Sala')">
-            <div class="single-panic-circle">
-              <span>🚨</span>
-            </div>
-            <div class="single-panic-title">SOLICITAR ASISTENCIA</div>
-            <div class="single-panic-desc">
-              Presiona aquí ante cualquier situación de emergencia, desorden, incidente de salud o necesidad de apoyo urgente en el aula.
-            </div>
-            <div class="single-panic-action">
-              🚨 PULSAR PARA PEDIR AUXILIO
+        <div class="actuator-stage">
+          
+          <!-- Aura exterior -->
+          <div class="actuator-aura"></div>
+
+          <!-- Bisel exterior -->
+          <div class="actuator-bezel">
+            <div class="actuator-hazard-ring">
+              <!-- Botón pulsador 3D -->
+              <button class="actuator-button" onclick="activarAlerta('general', '🚨 Solicitud de Asistencia Urgente en Sala')" aria-label="Solicitar Asistencia Inmediata">
+                <span class="btn-alert-icon">🚨</span>
+                <span class="btn-alert-text">EMERGENCIA</span>
+                <span class="btn-alert-sub">PULSAR PARA LLAMAR</span>
+              </button>
             </div>
           </div>
+
+          <!-- Rótulo explicativo moderno -->
+          <div class="actuator-legend">
+            <div class="actuator-legend-badge">
+              <span>🔔</span>
+              <span>Pulsa una vez para avisar a Inspectoría inmediatamente</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- ESTADO 2: Pantalla de Alerta Activa -->
-      <div id="panelAlertaActiva" style="display: none;">
-        <div class="alerta-activa-banner" id="bannerAlerta">
-          <div class="alerta-activa-icon" id="alertaIcono">🚨</div>
-          <div class="alerta-activa-titulo" id="alertaTitulo">¡ALERTA ENVIADA!</div>
-          <div class="alerta-activa-detalles" id="alertaDetalles">
-            Se ha notificado a Inspectoría, Enfermería y Convivencia Escolar.
+      <!-- ESTADO 2: PANTALLA HUD ALERTA EN CURSO -->
+      <div id="panelAlertaActiva" style="display: none; width: 100%; display: flex; justify-content: center;">
+        <div class="hud-active-panel" id="bannerAlerta">
+          <div class="hud-alert-icon" id="alertaIcono">🚨</div>
+          <div class="hud-alert-title" id="alertaTitulo">¡ALERTA TRANSMITIENDO!</div>
+          <div class="hud-alert-desc" id="alertaDetalles">
+            Se ha notificado a Inspectoría General. La sirena está sonando en la central.
           </div>
 
           <div id="contenedorAtencion" style="display: none;">
-            <div class="alerta-activa-atencion" id="textoAtencion">
+            <div class="hud-atencion-pill" id="textoAtencion">
               🏃 Personal en camino...
             </div>
           </div>
 
           <div>
-            <button class="btn-cancelar-alerta" onclick="confirmarCancelacion()">
-              ⚠️ Cancelar Alerta (Fue un error / Falsa alarma)
+            <button class="btn-hud-cancel" onclick="confirmarCancelacion()">
+              ⚠️ Cancelar Alerta (Falsa alarma / Error)
             </button>
           </div>
         </div>
@@ -388,10 +818,10 @@
     function mostrarPantallaAlertaActiva(tipo, descripcion) {
       document.getElementById('panelBotonera').style.display = 'none';
       const panelAlerta = document.getElementById('panelAlertaActiva');
-      panelAlerta.style.display = 'block';
+      panelAlerta.style.display = 'flex';
 
       const banner = document.getElementById('bannerAlerta');
-      banner.className = 'alerta-activa-banner';
+      banner.className = 'hud-active-panel';
 
       const icono = document.getElementById('alertaIcono');
       const titulo = document.getElementById('alertaTitulo');
@@ -400,24 +830,14 @@
 
       contenedorAtencion.style.display = 'none';
 
-      if (tipo === 'enfermeria') {
-        icono.textContent = '🩺';
-        titulo.textContent = '¡ALERTA MÉDICA ENVIADA!';
-        detalles.textContent = 'Se ha solicitado auxilio a ENFERMERÍA e Inspectoría General.';
-      } else if (tipo === 'convivencia') {
-        icono.textContent = '🤝';
-        titulo.textContent = '¡ALERTA DE CONVIVENCIA ENVIADA!';
-        detalles.textContent = 'Se ha notificado al equipo de CONVIVENCIA ESCOLAR e Inspectoría.';
-      } else {
-        icono.textContent = '🚨';
-        titulo.textContent = '¡ALERTA DE AUXILIO ENVIADA!';
-        detalles.textContent = 'Se ha notificado de inmediato a Inspectoría General. La sirena está sonando.';
-      }
+      icono.textContent = '🚨';
+      titulo.textContent = '¡ALERTA TRANSMITIENDO!';
+      detalles.textContent = 'Se ha notificado de inmediato a Inspectoría General. La sirena está sonando en la central.';
     }
 
     function mostrarAtencionEnCamino(alerta) {
       const banner = document.getElementById('bannerAlerta');
-      banner.className = 'alerta-activa-banner estado-atendiendo';
+      banner.className = 'hud-active-panel estado-atendiendo';
 
       const contenedorAtencion = document.getElementById('contenedorAtencion');
       const textoAtencion = document.getElementById('textoAtencion');
@@ -442,19 +862,19 @@
     function finalizarAlertaEnPantalla(mensaje) {
       const banner = document.getElementById('bannerAlerta');
       if (banner) {
-        banner.className = 'alerta-activa-banner';
-        banner.style.borderColor = '#16a34a';
-        banner.style.background = '#f0fdf4';
-        banner.style.boxShadow = '0 0 25px rgba(22, 163, 74, 0.4)';
+        banner.className = 'hud-active-panel';
+        banner.style.borderColor = '#10b981';
+        banner.style.background = 'linear-gradient(160deg, rgba(6, 40, 24, 0.9) 0%, rgba(4, 20, 14, 0.95) 100%)';
+        banner.style.boxShadow = '0 0 35px rgba(16, 185, 129, 0.5)';
         
         document.getElementById('alertaIcono').textContent = '✅';
         document.getElementById('alertaTitulo').textContent = '¡ALERTA RESUELTA!';
-        document.getElementById('alertaTitulo').style.color = '#15803d';
+        document.getElementById('alertaTitulo').style.color = '#34d399';
         document.getElementById('alertaDetalles').textContent = mensaje || 'La situación ha sido atendida y cerrada con éxito.';
         document.getElementById('contenedorAtencion').style.display = 'none';
       }
 
-      // Dejar visible la confirmación verde 2 segundos y volver a la botonera normal
+      // Dejar visible la confirmación verde 2 segundos y volver al botón
       setTimeout(() => {
         document.getElementById('panelAlertaActiva').style.display = 'none';
         document.getElementById('panelBotonera').style.display = 'block';
