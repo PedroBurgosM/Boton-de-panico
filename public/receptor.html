@@ -653,13 +653,12 @@
     <!-- DECK DE CONTROL DEL RECEPTOR -->
     <div class="control-deck">
       <div class="profile-segmented">
-        <span class="profile-label">Perfil de Estación:</span>
-        <select id="selectRol" class="select-profile-modern" onchange="cambiarRolReceptor()">
-          <option value="todos">🏢 Inspectoría General (Recibe TODAS)</option>
-          <option value="enfermeria">🩺 Enfermería (Médicas y Auxilio)</option>
-          <option value="convivencia">🤝 Convivencia Escolar (Contención y Auxilio)</option>
-          <option value="patio">🛡️ Inspector de Patio</option>
-        </select>
+        <div style="display: flex; align-items: center; gap: 0.6rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.55rem 1.25rem; border-radius: 9999px;">
+          <span style="font-size: 1.1rem;">🛡️</span>
+          <span style="font-size: 0.88rem; font-weight: 800; color: #93c5fd; letter-spacing: 0.5px; text-transform: uppercase;">
+            CENTRAL RECEPTORA • TODAS LAS ALERTAS
+          </span>
+        </div>
       </div>
 
       <div class="action-controls">
@@ -758,7 +757,7 @@
     let socket = null;
     let alertasActivas = [];
     let historial = [];
-    let rolActual = localStorage.getItem('colegio_receptor_rol') || 'todos';
+    let rolActual = 'todos';
     let nombreUsuario = localStorage.getItem('colegio_receptor_nombre') || '';
     let idAlertaParaAtender = null;
     let intervaloTimers = null;
@@ -773,7 +772,6 @@
     }, 1000);
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('selectRol').value = rolActual;
       if (nombreUsuario) {
         document.getElementById('txtNombreResponsable').value = nombreUsuario;
       }
@@ -866,20 +864,8 @@
       }
     }
 
-    function cambiarRolReceptor() {
-      rolActual = document.getElementById('selectRol').value;
-      localStorage.setItem('colegio_receptor_rol', rolActual);
-      renderizarAlertas();
-      evaluarSirena();
-    }
-
     function correspondeARol(alerta) {
-      if (rolActual === 'todos') return true;
-      if (alerta.tipo === 'general') return true;
-      if (rolActual === 'enfermeria' && (alerta.tipo === 'enfermeria' || alerta.tipo === 'general')) return true;
-      if (rolActual === 'convivencia' && (alerta.tipo === 'convivencia' || alerta.tipo === 'general')) return true;
-      if (rolActual === 'patio' && (alerta.tipo === 'inspectoria' || alerta.tipo === 'general')) return true;
-      return false;
+      return true; // Todas las alertas son recibidas y mostradas para todos
     }
 
     function renderizarAlertas() {
