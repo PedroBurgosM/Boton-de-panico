@@ -597,7 +597,7 @@
       </div>
 
       <!-- ESTADO 2: PANTALLA HUD ALERTA EN CURSO -->
-      <div id="panelAlertaActiva" style="display: none; width: 100%; display: flex; justify-content: center;">
+      <div id="panelAlertaActiva" style="display: none; width: 100%; justify-content: center;">
         <div class="hud-active-panel" id="bannerAlerta">
           <div class="hud-alert-icon" id="alertaIcono">🚨</div>
           <div class="hud-alert-title" id="alertaTitulo">¡ALERTA TRANSMITIENDO!</div>
@@ -692,9 +692,11 @@
               alertaActualId = miAlerta.id;
               if (miAlerta.estado === 'atendiendo') {
                 mostrarAtencionEnCamino(miAlerta);
+              } else {
+                mostrarPantallaAlertaActiva(miAlerta.tipo, miAlerta.mensaje);
               }
-            } else if (document.getElementById('panelAlertaActiva').style.display === 'block') {
-              // Si ya no existe alerta activa en el servidor para esta sala, restaurar botonera
+            } else {
+              // Si no existe alerta activa para esta sala en el servidor, mostrar la botonera
               document.getElementById('panelAlertaActiva').style.display = 'none';
               document.getElementById('panelBotonera').style.display = 'block';
               alertaActualId = null;
